@@ -1,0 +1,10 @@
+title: Documentation Template
+links:
+  - title: About
+    href: about.md
+  - title: Diplodoc page on index page
+    href: page.md
+  - title: YFM Structure on index page
+    href: anotherpage.md
+  - title: Sub-section on index page
+    href: sub-section/
