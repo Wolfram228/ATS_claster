@@ -57,6 +57,12 @@
                     </th>
                     </tr>
                 </template>
+                <template #no-data>
+                    <div class="text-center pa-4">
+                        <span v-if="loading">Загрузка данных...</span>
+                        <span v-else>Данные отсутствуют</span>
+                    </div>
+                </template>
             </v-data-table-virtual>
         </v-row>
     </v-container>
@@ -110,6 +116,7 @@ export default {
             selectedRegion: undefined,
             selectedDateBefore: undefined,
             selectedDateAfter: undefined,
+            loading: false,
         }
     },
     computed: {
@@ -142,10 +149,13 @@ export default {
         this.selectedDateAfter = afterCurrentDate; 
 
         try {
+            this.loading = true;
             const response = await fetch(`https://cloud-a.istu.edu/api/table?from=${this.selectedDateBefore}&to=${this.selectedDateAfter}`);
             this.boats = await response.json();
         } catch (error) {
             this.errorMessage = error;
+        } finally {
+            this.loading = false;
         }
 
         this.headers.forEach(h => {this.filters[h.key] = ''})
