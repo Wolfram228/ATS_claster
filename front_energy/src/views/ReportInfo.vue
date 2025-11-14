@@ -2,7 +2,7 @@
     <v-container>
         <v-row>
             <v-col 
-            cols="3" 
+            cols="12" 
             sm="6"
             lg="3"
             v-for="ri in reportInfo">
@@ -34,39 +34,55 @@
                     <div class="text-body-2 text-grey-darken-1 mt-1" align="left">Потребление электроэнергии за 2024 год</div>
                     <div class="text-body-2 text-grey-darken-1 mt-6" align="left">Интерактивные графики</div>
                     <v-container class="d-flex">
-                        <v-btn class="flex-grow-1 me-3" color="blue-grey-lighten-5" v-on:click="GraphType = 1"> Объём по времени </v-btn>
-                        <v-btn class="flex-grow-1 me-3" color="blue-grey-lighten-5" v-on:click="GraphType = 2"> Цена по времени </v-btn>
-                        <v-btn class="flex-grow-1 me-3" color="blue-grey-lighten-5" v-on:click="GraphType = 3"> Объём и цена по времени </v-btn>
+                        <v-row dense>
+                            <v-col cols="12" md="4">
+                                <v-btn class="flex-grow-1 me-3" color="blue-grey-lighten-5" v-on:click="GraphType = 1" block> Объём по времени </v-btn>
+                            </v-col>
+                            <v-col cols="12" md="4">
+                                <v-btn class="flex-grow-1 me-3" color="blue-grey-lighten-5" v-on:click="GraphType = 2" block> Цена по времени </v-btn>
+                            </v-col>
+                            <v-col cols="12" md="4">
+                                <v-btn class="flex-grow-1 me-3" color="blue-grey-lighten-5" v-on:click="GraphType = 3" block> Объём и цена по времени </v-btn>
+                            </v-col>
+                        </v-row>
                     </v-container>
-                    <v-container class="d-flex">
-                        <v-text-field
-                        v-model="selectedDateBefore"
-                        label="Отображать с:"
-                        type="date"
-                        class="flex-grow-1 me-3"
-                        ></v-text-field>
-                        <v-text-field
-                        v-model="selectedDateAfter"
-                        label="Отображать до:"
-                        type="date"
-                        class="flex-grow-1 me-3"
-                        ></v-text-field>
-                        <v-menu :location="center" class="flex-grow-1 me-3">
-                            <template v-slot:activator="{ props }">
-                                <v-btn color="blue-grey-lighten-5" v-bind="props" min-height="55px"> {{ selectedRegion }} </v-btn>
-                            </template>
+                    <v-container>
+                        <v-row>
+                            <v-col cols="12" md="4">
+                                <v-text-field
+                                v-model="selectedDateBefore"
+                                label="Отображать с:"
+                                type="date"
+                                hide-details
+                                ></v-text-field>
+                            </v-col>
+                            <v-col cols="12" md="4">
+                                <v-text-field
+                                v-model="selectedDateAfter"
+                                label="Отображать до:"
+                                type="date"
+                                hide-details
+                                ></v-text-field>
+                            </v-col>
+                            <v-col cols="12" md="4">
+                                <v-menu location="top" class="flex-grow-1 me-3">
+                                    <template v-slot:activator="{ props }">
+                                        <v-btn color="blue-grey-lighten-5" v-bind="props" min-height="55px" block> {{ selectedRegion }} </v-btn>
+                                    </template>
 
-                            <v-list>
-                                <v-list-item
-                                v-for="(region, id) in regions"
-                                :key="id"
-                                :value="id"
-                                v-on:click="selectedRegion = region.value"
-                                >
-                                <v-list-item-title>{{ region.value }}</v-list-item-title>
-                                </v-list-item>
-                            </v-list>
-                        </v-menu>
+                                    <v-list style="max-height: 300px">
+                                        <v-list-item
+                                        v-for="(region, id) in regions"
+                                        :key="id"
+                                        :value="id"
+                                        v-on:click="selectedRegion = region.value"
+                                        >
+                                        <v-list-item-title>{{ region.value }}</v-list-item-title>
+                                        </v-list-item>
+                                    </v-list>
+                                </v-menu>
+                            </v-col>
+                        </v-row>
                     </v-container>
 
                     <!-- Первый график -->

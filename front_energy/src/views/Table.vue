@@ -1,34 +1,40 @@
 <template>
     <v-container>
         <v-row>
-            <v-text-field
-            v-model="selectedDateBefore"
-            label="Отображать с:"
-            type="datetime-local"
-            class="flex-grow-1 me-3 mt-4"
-            ></v-text-field>
-            <v-text-field
-            v-model="selectedDateAfter"
-            label="Отображать до:"
-            type="datetime-local"
-            class="flex-grow-1 me-3 mt-4"
-            ></v-text-field>
-            <v-menu :location="center">
-                <template v-slot:activator="{ props }">
-                    <v-btn color="blue-grey-lighten-5" v-bind="props" min-height="55px" class="me-3 mt-4"> {{ selectedRegion }} </v-btn>
-                </template>
+            <v-col cols="12" md="4">
+                <v-text-field
+                v-model="selectedDateBefore"
+                label="Отображать с:"
+                type="datetime-local"
+                hide-details
+                ></v-text-field>
+            </v-col>
+            <v-col cols="12" md="4">
+                <v-text-field
+                v-model="selectedDateAfter"
+                label="Отображать до:"
+                type="datetime-local"
+                hide-details
+                ></v-text-field>
+            </v-col>
+            <v-col cols="12" md="4">
+                <v-menu location="bottom">
+                    <template v-slot:activator="{ props }">
+                        <v-btn color="blue-grey-lighten-5" v-bind="props" min-height="55px" block> {{ selectedRegion }} </v-btn>
+                    </template>
 
-                <v-list>
-                    <v-list-item
-                    v-for="(region, id) in regions"
-                    :key="id"
-                    :value="id"
-                    v-on:click="selectedRegion = region.value"
-                    >
-                    <v-list-item-title>{{ region.value }}</v-list-item-title>
-                    </v-list-item>
-                </v-list>
-            </v-menu>
+                    <v-list style="max-height: 300px">
+                        <v-list-item
+                        v-for="(region, id) in regions"
+                        :key="id"
+                        :value="id"
+                        v-on:click="selectedRegion = region.value"
+                        >
+                        <v-list-item-title>{{ region.value }}</v-list-item-title>
+                        </v-list-item>
+                    </v-list>
+                </v-menu>
+            </v-col>
         </v-row>
         <v-row>
             <v-data-table-virtual
@@ -76,7 +82,7 @@ export default {
     data() {
         return {
             headers: [
-                {title: 'Дата', key: 'date'},
+                {title: 'Дата', key: 'timestamp'},
                 {title: 'Субъект РФ', key: 'region'},
                 {title: 'Час', key: 'hour'},
                 {title: 'ГЭС', key: 'plan_GES'},
@@ -119,14 +125,20 @@ export default {
             loading: false,
         }
     },
+    methods: {
+        formatDateTime(dt) {
+            return dt.slice(0, 19).replace('T', ' ');
+        }
+    },
     computed: {
         virtualBoats() {
             if (!this.boats) return [];
             return [...Array(10000).keys()].map(i => {
                 // клонируем объект из boats
                 const boat = { ...this.boats[i % this.boats.length] }
-                // модифицируем поле date для уникальности
-                boat.date = `${boat.date} #${i}`
+
+                boat.timestamp = this.formatDateTime(boat.timestamp);
+
                 return boat
             })
         },

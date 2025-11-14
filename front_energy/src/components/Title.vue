@@ -1,5 +1,5 @@
 <template>
-    <v-app-bar>
+    <v-app-bar app>
         <v-app-bar-title>
             <div class="d-flex align-center">
                 <v-img :src="icon" max-width="45" class="me-2" />

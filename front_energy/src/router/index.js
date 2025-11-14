@@ -1,4 +1,4 @@
-import { createRouter, createWebHistory, createWebHashHistory } from 'vue-router'
+import { createRouter, createWebHistory } from 'vue-router'
 
 const routes = [
     {
@@ -35,6 +35,9 @@ const routes = [
 ]
 
 export default createRouter({
-  history: createWebHashHistory(),
-  routes
+    history: createWebHistory(),
+    routes,
+    scrollBehavior() {
+        return { top: 0 }
+    }
 })
