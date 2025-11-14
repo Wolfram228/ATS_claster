@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>Анализ рынка электроэнергии</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
+    <!-- DataTables CSS -->
+    <link href="https://cdn.datatables.net/1.13.4/css/dataTables.bootstrap5.min.css" rel="stylesheet"/>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        body { background-color: #f0f8ff; }
+        table.dataTable thead input { width:100%; box-sizing:border-box; }
+        #reloadBtn { 
+            display: block;
+            margin: 20px auto 0 auto;
+            background-color: #005b9f;
+            color: white;
+        }
+        .container-fluid { 
+            max-width: 100%;
+            padding: 0 10px;
+        }
+        canvas {
+            width: 100% !important;
+            height: auto !important;
+            max-height: 500px;
+        }
+        #sharePie, #priceChart {
+            max-width: 100%;
+        }
+        .nav-tabs .nav-link.active {
+            font-weight: bold;
+        }
+        .loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid my-4 position-relative">
+        <h1 class="text-primary mb-1">
+            Анализ рынка электроэнергии
+            <small><a href="https://www.atsenergo.ru" target="_blank">ATSEnergo</a></small>
+        </h1>
+        
+        <ul class="nav nav-tabs" role="tablist">
+            <li class="nav-item"><button class="nav-link active" data-bs-target="#home" data-bs-toggle="tab">Главная</button></li>
+            <li class="nav-item"><button class="nav-link" data-bs-target="#charts" data-bs-toggle="tab">Графики</button></li>
+            <li class="nav-item"><button class="nav-link" data-bs-target="#table" data-bs-toggle="tab">Таблица</button></li>
+            <li class="nav-item"><button class="nav-link" data-bs-target="#history" data-bs-toggle="tab">История</button></li>
+            <li class="nav-item"><button class="nav-link" data-bs-target="#report" data-bs-toggle="tab">Отчёты</button></li>
+            <li class="nav-item"><button class="nav-link" data-bs-target="#info" data-bs-toggle="tab">Инструкция</button></li>
+        </ul>
+        
+        <div class="tab-content border border-top-0 bg-white p-4">
+            <!-- === Главная === -->
+            <div class="tab-pane fade show active" id="home">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5>Объёмы по генераторам</h5>
+                    <div class="form-group">
+                        <label class="form-label">Регион:</label>
+                        <select class="form-select form-select-sm" id="homeRegion" style="width: 200px;">
+                            <option value="">Все регионы</option>
+                        </select>
+                    </div>
+                </div>
+                <canvas id="genVolChart"></canvas>
+                <div class="row mt-4">
+                    <div class="col-md-6">
+                        <h5>Доли генераторов</h5>
+                        <canvas id="sharePie"></canvas>
+                    </div>
+                    <div class="col-md-6">
+                        <h5>Динамика цен</h5>
+                        <canvas id="priceChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- === Графики === -->
+            <div class="tab-pane fade" id="charts">
+                <div class="row mb-3 gx-2 align-items-end">
+                    <div class="col-auto">
+                        <label class="col-form-label">Тип графика:</label>
+                        <select class="form-select" id="chartType">
+                            <option value="volume">Объём по времени</option>
+                            <option value="price">Цена по времени</option>
+                            <option value="both">Объём & Цена</option>
+                        </select>
+                    </div>
+                    <div class="col-auto">
+                        <label class="col-form-label">С:</label>
+                        <input class="form-control" id="fromGraph" type="datetime-local"/>
+                    </div>
+                    <div class="col-auto">
+                        <label class="col-form-label">По:</label>
+                        <input class="form-control" id="toGraph" type="datetime-local"/>
+                    </div>
+                    <div class="col-auto">
+                        <label class="col-form-label">Регион:</label>
+                        <select class="form-select" id="regionGraph"><option value="">Все регионы</option></select>
+                    </div>
+                    <div class="col-auto">
+                        <button class="btn btn-primary" id="btnGraph">Показать</button>
+                    </div>
+                </div>
+                <canvas height="400" id="chartCanvas"></canvas>
+            </div>
+            
+            <!-- === Таблица === -->
+            <div class="tab-pane fade" id="table">
+                <div class="row mb-3 gx-2 align-items-end">
+                    <div class="col-auto">
+                        <label class="col-form-label">С:</label>
+                        <input class="form-control" id="fromTable" type="date"/>
+                    </div>
+                    <div class="col-auto">
+                        <label class="col-form-label">По:</label>
+                        <input class="form-control" id="toTable" type="date"/>
+                    </div>
+                    <div class="col-auto">
+                        <label class="col-form-label">Регион:</label>
+                        <select class="form-select" id="regionTable"><option value="">Все регионы</option></select>
+                    </div>
+                    <div class="col-auto">
+                        <button class="btn btn-primary" id="btnTable">Показать</button>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-striped table-bordered" id="dataTable" style="width:100%">
+                        <thead>
+                            <tr>
+                                <th>Дата</th>
+                                <th>Время</th>
+                                <th>Регион</th>
+                                <th>ТЭС</th>
+                                <th>ГЭС</th>
+                                <th>АЭС</th>
+                                <th>Потребление</th>
+                                <th>Цена</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- === История === -->
+            <div class="tab-pane fade" id="history">
+                <h5>История загрузок</h5>
+                <table class="table table-sm table-bordered" id="histTable">
+                    <thead>
+                        <tr><th>Дата отчёта</th><th>Время загрузки</th><th>Записей</th></tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+            
+            <!-- === Отчёты === -->
+            <div class="tab-pane fade" id="report">
+                <h4>Экспорт отчёта в Excel</h4>
+                <div class="row gx-2 align-items-end mb-3">
+                    <div class="col-auto">
+                        <label class="col-form-label">С:</label>
+                        <input class="form-control" id="repFrom" type="date"/>
+                    </div>
+                    <div class="col-auto">
+                        <label class="col-form-label">По:</label>
+                        <input class="form-control" id="repTo" type="date"/>
+                    </div>
+                    <div class="col-auto">
+                        <label class="col-form-label">Регион:</label>
+                        <select class="form-select" id="repRegion"><option value="">Все регионы</option></select>
+                    </div>
+                    <div class="col-auto">
+                        <button class="btn btn-success" id="btnDownload">Скачать Excel</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- === Инструкция === -->
+            <div class="tab-pane fade" id="info">
+                <h4>Инструкция</h4>
+                <ul>
+                    <li><strong>Главная</strong> - основные графики генерации и цен</li>
+                    <li><strong>Графики</strong> - детальные графики с фильтрацией</li>
+                    <li><strong>Таблица</strong> - табличный просмотр данных</li>
+                    <li><strong>История</strong> - журнал загрузок данных</li>
+                    <li><strong>Отчёты</strong> - экспорт данных в Excel</li>
+                </ul>
+            </div>
+        </div>
+        
+        <button class="btn btn-success" id="reloadBtn">Обновить данные</button>
+    </div>
+
+    <!-- Скрипты -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap5.min.js"></script>
+    
+    <script>
+        // Глобальные переменные для хранения графиков
+        let genVolChart, sharePieChart, priceChart, summaryChart;
+        let currentHomeRegion = '';
+
+        // Инициализация при загрузке
+        document.addEventListener('DOMContentLoaded', function() {
+            setupEventListeners();
+            loadRegions();
+            setDefaultDates();
+            loadHistory();
+            // Загружаем данные для главной страницы
+            loadHomeData();
+        });
+
+        // Загрузка данных для главной страницы
+        async function loadHomeData(region = '') {
+            try {
+                showLoading(true);
+                
+                // Используем данные из Django контекста
+                const contextData = {
+                    gens_labels: {{ gens_labels|safe }},
+                    prev_date: '{{ prev_date }}',
+                    yest_date: '{{ yest_date }}',
+                    vol_prev: {{ vol_prev|safe }},
+                    vol_yest: {{ vol_yest|safe }},
+                    shares: {{ shares|safe }},
+                    prices: {{ prices|safe }},
+                    region: '{{ region }}'
+                };
+
+                // Если регион изменился, делаем новый запрос
+                if (region !== currentHomeRegion) {
+                    const response = await fetch(`/?region=${encodeURIComponent(region)}`);
+                    const html = await response.text();
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+                    
+                    // Ищем script с данными (нужно будет добавить в Django шаблон)
+                    const scriptContent = doc.querySelector('script#context-data');
+                    if (scriptContent) {
+                        const newData = JSON.parse(scriptContent.textContent);
+                        updateChartsWithRealData(newData);
+                    }
+                } else {
+                    updateChartsWithRealData(contextData);
+                }
+                
+                currentHomeRegion = region;
+                
+            } catch (error) {
+                console.error('Ошибка загрузки данных:', error);
+                initializeChartsWithTestData(); // Fallback на тестовые данные
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        function updateChartsWithRealData(data) {
+            const hours = Array.from({length: 24}, (_, i) => i);
+            
+            // Обновляем график объемов
+            if (genVolChart) genVolChart.destroy();
+            
+            const datasets = [];
+            const colors = ['#ff6384', '#36a2eb', '#cc65fe', '#4bc0c0', '#ffce56', '#9966ff'];
+            
+            data.gens_labels.forEach((label, index) => {
+                datasets.push({
+                    label: label,
+                    data: data.vol_yest[index] || Array(24).fill(0),
+                    borderColor: colors[index % colors.length],
+                    backgroundColor: colors[index % colors.length] + '20',
+                    tension: 0.4,
+                    fill: false
+                });
+            });
+
+            genVolChart = new Chart(document.getElementById('genVolChart'), {
+                type: 'line',
+                data: {
+                    labels: hours,
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false
+                    },
+                    scales: {
+                        y: { 
+                            beginAtZero: true, 
+                            title: { display: true, text: 'МВт' } 
+                        },
+                        x: { 
+                            title: { display: true, text: 'Час' },
+                            ticks: {
+                                callback: function(value) {
+                                    return value + ':00';
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: `Объемы генерации за ${data.yest_date}`
+                        }
+                    }
+                }
+            });
+
+            // Обновляем круговую диаграмму
+            if (sharePieChart) sharePieChart.destroy();
+            
+            const shareLabels = [];
+            const shareData = [];
+            const shareColors = ['#ff6384', '#36a2eb', '#cc65fe', '#4bc0c0', '#ffce56', '#9966ff'];
+            
+            Object.keys(data.shares).forEach((label, index) => {
+                if (data.shares[label] > 0) {
+                    shareLabels.push(label);
+                    shareData.push(data.shares[label]);
+                }
+            });
+
+            sharePieChart = new Chart(document.getElementById('sharePie'), {
+                type: 'pie',
+                data: {
+                    labels: shareLabels,
+                    datasets: [{
+                        data: shareData,
+                        backgroundColor: shareColors.slice(0, shareLabels.length)
+                    }]
+                },
+                options: { 
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Доли генерации'
+                        },
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+
+            // Обновляем график цен
+            if (priceChart) priceChart.destroy();
+            
+            const priceLabels = data.prices.map(item => item[0]);
+            const priceData = data.prices.map(item => item[1]);
+
+            priceChart = new Chart(document.getElementById('priceChart'), {
+                type: 'line',
+                data: {
+                    labels: priceLabels,
+                    datasets: [{
+                        label: 'Средняя цена, руб/МВт·ч',
+                        data: priceData,
+                        borderColor: '#00cc66',
+                        backgroundColor: '#00cc6620',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: { 
+                    responsive: true,
+                    scales: {
+                        x: {
+                            title: { display: true, text: 'Дата' }
+                        },
+                        y: {
+                            title: { display: true, text: 'Цена, руб/МВт·ч' }
+                        }
+                    },
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Динамика цен за последний месяц'
+                        }
+                    }
+                }
+            });
+        }
+
+        function initializeChartsWithTestData() {
+            const hours = Array.from({length: 24}, (_, i) => i);
+            const testData = {
+                ТЭС: Array.from({length: 24}, (_, i) => 300 + Math.random() * 200),
+                ГЭС: Array.from({length: 24}, (_, i) => 100 + Math.random() * 100),
+                АЭС: Array.from({length: 24}, (_, i) => 200 + Math.random() * 150),
+                ВЭС: Array.from({length: 24}, (_, i) => 50 + Math.random() * 50),
+                СЭС: Array.from({length: 24}, (_, i) => 20 + Math.random() * 30)
+            };
+
+            genVolChart = new Chart(document.getElementById('genVolChart'), {
+                type: 'line',
+                data: {
+                    labels: hours,
+                    datasets: [
+                        {
+                            label: 'ТЭС',
+                            data: testData.ТЭС,
+                            borderColor: '#ff6384',
+                            tension: 0.4
+                        },
+                        {
+                            label: 'ГЭС',
+                            data: testData.ГЭС,
+                            borderColor: '#36a2eb',
+                            tension: 0.4
+                        },
+                        {
+                            label: 'АЭС',
+                            data: testData.АЭС,
+                            borderColor: '#cc65fe',
+                            tension: 0.4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: { beginAtZero: true, title: { display: true, text: 'МВт' } },
+                        x: { title: { display: true, text: 'Час' } }
+                    }
+                }
+            });
+
+            sharePieChart = new Chart(document.getElementById('sharePie'), {
+                type: 'pie',
+                data: {
+                    labels: ['ТЭС', 'ГЭС', 'АЭС', 'ВЭС', 'СЭС'],
+                    datasets: [{
+                        data: [45, 25, 20, 7, 3],
+                        backgroundColor: ['#ff6384', '#36a2eb', '#cc65fe', '#4bc0c0', '#ffce56']
+                    }]
+                },
+                options: { responsive: true }
+            });
+
+            priceChart = new Chart(document.getElementById('priceChart'), {
+                type: 'line',
+                data: {
+                    labels: ['01.10', '02.10', '03.10', '04.10', '05.10', '06.10'],
+                    datasets: [{
+                        label: 'Цена, руб/МВт·ч',
+                        data: [1500, 1520, 1480, 1550, 1530, 1570],
+                        borderColor: '#00cc66',
+                        tension: 0.4
+                    }]
+                },
+                options: { responsive: true }
+            });
+        }
+
+        function setupEventListeners() {
+            // Обновление данных
+            document.getElementById('reloadBtn').onclick = async () => {
+                const btn = document.getElementById('reloadBtn');
+                btn.disabled = true;
+                btn.textContent = 'Запуск...';
+                
+                try {
+                    const res = await fetch('/api/reload/', { method: 'POST' });
+                    const data = await res.json();
+                    alert(data.message || data.status || 'Данные обновлены');
+                    // Перезагружаем данные после обновления
+                    loadHomeData(currentHomeRegion);
+                    loadHistory();
+                } catch (error) {
+                    alert('Ошибка обновления данных: ' + error.message);
+                }
+                
+                btn.disabled = false;
+                btn.textContent = 'Обновить данные';
+            };
+
+            // Показать таблицу
+            document.getElementById('btnTable').onclick = loadTableData;
+
+            // Скачать отчет
+            document.getElementById('btnDownload').onclick = downloadReport;
+
+            // Показать график
+            document.getElementById('btnGraph').onclick = loadSummaryChart;
+
+            // Изменение региона на главной
+            document.getElementById('homeRegion').addEventListener('change', function() {
+                loadHomeData(this.value);
+            });
+        }
+
+        async function loadTableData() {
+            const from = document.getElementById('fromTable').value;
+            const to = document.getElementById('toTable').value;
+            const region = document.getElementById('regionTable').value;
+            
+            if (!from || !to) {
+                alert('Укажите период');
+                return;
+            }
+            
+            try {
+                showLoading(true);
+                let url = `/api/table/?from=${from}&to=${to}`;
+                if (region) url += `&region=${region}`;
+                
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                const tbody = document.querySelector('#dataTable tbody');
+                tbody.innerHTML = '';
+                
+                data.forEach(item => {
+                    const date = new Date(item.timestamp);
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${date.toLocaleDateString('ru-RU')}</td>
+                        <td>${date.toLocaleTimeString('ru-RU', {hour: '2-digit', minute: '2-digit'})}</td>
+                        <td>${item.region || ''}</td>
+                        <td>${item.plan_TES || 0}</td>
+                        <td>${item.plan_GES || 0}</td>
+                        <td>${item.plan_AES || 0}</td>
+                        <td>${item.plan_consumption || 0}</td>
+                        <td>${item.price_buy || 0}</td>
+                    `;
+                    tbody.appendChild(row);
+                });
+
+                // Инициализируем DataTables если еще не инициализирована
+                if (!$.fn.DataTable.isDataTable('#dataTable')) {
+                    $('#dataTable').DataTable({
+                        language: {
+                            url: '//cdn.datatables.net/plug-ins/1.13.4/i18n/ru.json'
+                        },
+                        pageLength: 25
+                    });
+                }
+                
+            } catch (error) {
+                alert('Ошибка загрузки данных таблицы');
+                console.error(error);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        async function loadSummaryChart() {
+            const from = document.getElementById('fromGraph').value;
+            const to = document.getElementById('toGraph').value;
+            const region = document.getElementById('regionGraph').value;
+            const chartType = document.getElementById('chartType').value;
+            
+            if (!from || !to) {
+                alert('Укажите период');
+                return;
+            }
+            
+            try {
+                showLoading(true);
+                let url = `/api/summary/?from=${from}&to=${to}`;
+                if (region) url += `&region=${region}`;
+                
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                if (summaryChart) summaryChart.destroy();
+                
+                const labels = data.map(item => {
+                    const date = new Date(item.timestamp);
+                    return date.toLocaleString('ru-RU');
+                });
+                
+                const volumeData = data.map(item => item.volume);
+                const priceData = data.map(item => item.price);
+                
+                let datasets = [];
+                
+                if (chartType === 'volume' || chartType === 'both') {
+                    datasets.push({
+                        label: 'Объем генерации (МВт)',
+                        data: volumeData,
+                        borderColor: '#36a2eb',
+                        backgroundColor: '#36a2eb20',
+                        yAxisID: 'y',
+                        tension: 0.4
+                    });
+                }
+                
+                if (chartType === 'price' || chartType === 'both') {
+                    datasets.push({
+                        label: 'Цена (руб/МВт·ч)',
+                        data: priceData,
+                        borderColor: '#ff6384',
+                        backgroundColor: '#ff638420',
+                        yAxisID: chartType === 'both' ? 'y1' : 'y',
+                        tension: 0.4
+                    });
+                }
+                
+                const scales = {
+                    x: { title: { display: true, text: 'Время' } }
+                };
+                
+                if (chartType === 'both') {
+                    scales.y = {
+                        type: 'linear',
+                        display: true,
+                        position: 'left',
+                        title: { display: true, text: 'Объем, МВт' }
+                    };
+                    scales.y1 = {
+                        type: 'linear',
+                        display: true,
+                        position: 'right',
+                        title: { display: true, text: 'Цена, руб/МВт·ч' },
+                        grid: { drawOnChartArea: false }
+                    };
+                } else {
+                    scales.y = {
+                        title: { 
+                            display: true, 
+                            text: chartType === 'volume' ? 'Объем, МВт' : 'Цена, руб/МВт·ч' 
+                        }
+                    };
+                }
+                
+                summaryChart = new Chart(document.getElementById('chartCanvas'), {
+                    type: 'line',
+                    data: { labels, datasets },
+                    options: {
+                        responsive: true,
+                        interaction: { mode: 'index', intersect: false },
+                        scales: scales
+                    }
+                });
+                
+            } catch (error) {
+                alert('Ошибка загрузки данных для графика');
+                console.error(error);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        async function downloadReport() {
+            const from = document.getElementById('repFrom').value;
+            const to = document.getElementById('repTo').value;
+            const region = document.getElementById('repRegion').value;
+            
+            if (!from || !to) {
+                alert('Укажите период');
+                return;
+            }
+            
+            try {
+                let url = `/api/report/xls/?from=${from}&to=${to}`;
+                if (region) url += `&region=${region}`;
+                
+                window.location.href = url;
+            } catch (error) {
+                alert('Ошибка при скачивании отчета');
+            }
+        }
+
+        async function loadHistory() {
+            try {
+                const response = await fetch('/api/history/');
+                const data = await response.json();
+                
+                const tbody = document.querySelector('#histTable tbody');
+                tbody.innerHTML = '';
+                
+                data.forEach(item => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${item.date}</td>
+                        <td>${item.loaded}</td>
+                        <td>${item.count}</td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            } catch (error) {
+                console.log('Ошибка загрузки истории');
+            }
+        }
+
+        async function loadRegions() {
+            try {
+                const response = await fetch('/api/regions/');
+                const regions = await response.json();
+                
+                ['regionTable', 'regionGraph', 'repRegion', 'homeRegion'].forEach(selectId => {
+                    const select = document.getElementById(selectId);
+                    select.innerHTML = '<option value="">Все регионы</option>';
+                    regions.forEach(region => {
+                        const option = document.createElement('option');
+                        option.value = region;
+                        option.textContent = region;
+                        select.appendChild(option);
+                    });
+                });
+            } catch (error) {
+                console.log('Ошибка загрузки регионов');
+            }
+        }
+
+        function setDefaultDates() {
+            const yesterday = new Date();
+            yesterday.setDate(yesterday.getDate() - 1);
+            const dateStr = yesterday.toISOString().split('T')[0];
+            
+            ['fromTable', 'toTable', 'repFrom', 'repTo'].forEach(id => {
+                const element = document.getElementById(id);
+                if (element) element.value = dateStr;
+            });
+            
+            // Для datetime-local - последние 24 часа
+            const now = new Date();
+            const prev = new Date(now - 24 * 60 * 60 * 1000);
+            document.getElementById('fromGraph').value = prev.toISOString().slice(0, 16);
+            document.getElementById('toGraph').value = now.toISOString().slice(0, 16);
+        }
+
+        function showLoading(show) {
+            const container = document.querySelector('.container-fluid');
+            if (show) {
+                container.classList.add('loading');
+            } else {
+                container.classList.remove('loading');
+            }
+        }
+    </script>
+</body>
+</html>
