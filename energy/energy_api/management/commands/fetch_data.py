@@ -85,6 +85,8 @@ class Command(BaseCommand):
                     self.stdout.write(
                         self.style.SUCCESS(f"{current_date.date()}: ЗАГРУЖЕНО {inserted} записей")
                     )
+                else:
+                    self.stdout.write(f"{current_date.date()}: уже загружено ({exists.count} записей)")
                     
             except Exception as e:
                 self.stdout.write(
@@ -101,7 +103,7 @@ class Command(BaseCommand):
     def save_data(self, df, date):
         """Сохранение данных в базу"""
         inserted = 0
-        irkutsk_tz = ZoneInfo("Asia/Irkutsk")
+        moscow_tz = ZoneInfo("Europe/Moscow")
         
         for _, row in df.iterrows():
             # Пропускаем строки с NaN в hour
@@ -115,7 +117,7 @@ class Command(BaseCommand):
                 continue
 
             naive_dt = datetime.combine(date.date(), time(hour_val, 0))
-            aware_dt = naive_dt.replace(tzinfo=irkutsk_tz)
+            aware_dt = naive_dt.replace(tzinfo=moscow_tz)
 
             data_dict = {}
             for col in self.COLS[2:]:

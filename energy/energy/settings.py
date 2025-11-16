@@ -14,6 +14,7 @@ DEBUG = True
 ALLOWED_HOSTS = ['cloud-a.istu.edu','localhost', '127.0.0.1']
 SECURE_SSL_REDIRECT = False
 CSRF_TRUSTED_ORIGINS = ['https://cloud-a.istu.edu', 'https://localhost', 'https://127.0.0.1']
+
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -42,7 +43,6 @@ MIDDLEWARE = [
 INTERNAL_IPS = [
     '127.0.0.1',
     'localhost',
-    'cloud-a.istu.edu'
 ]
 
 ROOT_URLCONF = 'energy.urls'
