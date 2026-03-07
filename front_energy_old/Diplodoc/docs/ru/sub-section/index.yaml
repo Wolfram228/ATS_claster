@@ -1,0 +1,16 @@
+title: Веб-сервис сбора и анализа статистической информации цен на электроэнергию
+description: Документация проекта — введение, визуальная часть, серверная логика, база данных, система оповещений и математическая обработка данных.
+base: .
+toc:
+  - name: Введение
+    href: overview.md
+  - name: База данных (Database)
+    href: database.md
+  - name: Серверная логика (Backend)
+    href: backend.md
+  - name: Визуальная часть (Frontend)
+    href: frontend.md
+  - name: Система оповещений
+    href: notifications.md
+  - name: Математическая обработка данных
+    href: math.md
