@@ -10,11 +10,6 @@ const routes = [
         path: '/home',
         redirect: "/"
     },
-    { 
-        path: '/reports', 
-        name: 'reports', 
-        component: () => import("../views/Reports.vue") 
-    },
     {
         path: '/table',
         name: 'table',
@@ -22,10 +17,15 @@ const routes = [
 
     },
     {
-        path: "/reportInfo/:reportId",
-        name: "reportInfo",
-        component: () => import("../views/ReportInfo.vue"),
-        props: route => ({...route.params, reportId: parseInt(route.params.id)}),
+        path: "/information",
+        name: "information",
+        component: () => import("../views/Information.vue"),
+        // props: route => ({...route.params, reportId: parseInt(route.params.id)}),
+    },
+    {
+        path: "/interactiveMap",
+        name: "interactiveMap",
+        component: () => import("../views/InteractiveMap.vue"),
     },
     {
         path: "/:pathMatch(.*)*",
@@ -35,6 +35,9 @@ const routes = [
 ]
 
 export default createRouter({
-  history: createWebHistory(),
-  routes
+    history: createWebHistory(),
+    routes,
+    scrollBehavior() {
+        return { top: 0 }
+    }
 })

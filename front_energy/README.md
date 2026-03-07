@@ -4,6 +4,13 @@ This template should help get you started developing with Vue 3 in Vite. The tem
 
 Learn more about IDE Support for Vue in the [Vue Docs Scaling up Guide](https://vuejs.org/guide/scaling-up/tooling.html#ide-support).
 
-# Запуск проекта
+# Запуск проекта локально
 - npm install
 - npm run dev
+
+# Сборка для продакшена
+- npm install
+- npm run build
+
+Документация собирается в виде статического сайта и размещается внутри продакшн-сборки в каталоге `dist/docs/`.
+После деплоя документация доступна по URL `/docs/`.

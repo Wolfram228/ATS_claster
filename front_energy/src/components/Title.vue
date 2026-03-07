@@ -1,5 +1,5 @@
 <template>
-    <v-app-bar>
+    <v-app-bar app>
         <v-app-bar-title>
             <div class="d-flex align-center">
                 <v-img :src="icon" max-width="45" class="me-2" />
@@ -7,6 +7,9 @@
                     <p class="title1"> ATSEnergo </p>
                     <p class="title2">Анализ рынка электроэнергии</p>
                 </div>
+                <a href="/docs/ru/sub-section/overview.html" class="ms-auto mr-3">
+                    <v-btn class="doc-link">Документация</v-btn>
+                </a>
             </div>
         </v-app-bar-title>
     </v-app-bar>
@@ -36,5 +39,12 @@ export default {
 }
 p {
     margin: 0
+}
+.doc-link :deep(.v-btn__overlay),
+.doc-link :deep(.v-btn__underlay) {
+  opacity: 0 !important;
+}
+a {
+    color:rgb(39, 9, 146)
 }
 </style>
