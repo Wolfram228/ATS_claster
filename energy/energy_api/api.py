@@ -1,10 +1,15 @@
-from datetime import timedelta, datetime
 import json
+import subprocess
+import os
 import pandas as pd
-from io import BytesIO
 
+from django.core.paginator import Paginator
+from datetime import timedelta, datetime
+from io import BytesIO
+from django.db import connection
+from django.conf import settings
 from django.core.cache import cache
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse, FileResponse
 from django.db.models import Q, Sum, Avg
 from django.utils import timezone
 from django.middleware.csrf import get_token
@@ -64,6 +69,8 @@ class EnergyApiViewSet(GenericViewSet):
         date_to = request.GET.get('to')
         region = request.GET.get('region')
         hour = request.GET.get('hour')
+        page = int(request.GET.get('page', 1))
+        page_size = int(request.GET.get('page_size', 10000))
 
         """Валидация параметров"""
         if not date_from or not date_to:
@@ -73,7 +80,6 @@ class EnergyApiViewSet(GenericViewSet):
             }, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            """Исправляем формат даты"""
             if 'T' in date_from:
                 start_date = datetime.fromisoformat(date_from.replace('Z', '+00:00'))
                 end_date = datetime.fromisoformat(date_to.replace('Z', '+00:00'))
@@ -92,42 +98,88 @@ class EnergyApiViewSet(GenericViewSet):
                 'message': 'to должно быть >= from'
             }, status=status.HTTP_400_BAD_REQUEST)
 
-        if (end_date - start_date) > timedelta(days=365):
+        max_days = 365 * 3
+        if (end_date - start_date) > timedelta(days=max_days):
             return Response({
                 'status': 'error',
-                'message': 'Нельзя запрашивать больше чем 365 дней'
+                'message': 'Нельзя запрашивать больше чем 1200 дней'
             }, status=status.HTTP_400_BAD_REQUEST)
+        
+        sql = """
+        SELECT 
+            *
+        FROM elec_reports
+        WHERE timestamp BETWEEN %s AND %s
+        """
 
-        """Фильтрация данных"""
-        queryset = ElecReport.objects.filter(
-            timestamp__date__gte=start_date.date(),
-            timestamp__date__lte=end_date.date()
-        )
+        params = [start_date.date(), end_date.date()]
 
         if region:
-            queryset = queryset.filter(region=region)
-
+            sql += " AND region = %s"
+            params.append(region)
+    
         if hour:
-            queryset = queryset.filter(timestamp__hour=hour)
+            sql += " AND hour = %s"
+            params.append(hour)
 
-        """Ограничиваем количество записей для предотвращения перегрузки"""
-        queryset = queryset.order_by('timestamp', 'region')[:10000]
+        sql += " ORDER BY timestamp, region"
 
-        """Сериализация данных"""
-        serializer = ElecReportSerializer(queryset, many=True)
+        offset = (page - 1) * page_size
+        sql += " LIMIT %s OFFSET %s"
+        params.extend([page_size, offset])
+
+        count_sql = """
+        SELECT COUNT(*) 
+        FROM elec_reports
+        WHERE timestamp >= %s AND timestamp <= %s
+        """
+        count_params = [start_date.date(), end_date.date()]
+
+        if region:
+            count_sql += " AND region = %s"
+            count_params.append(region)
+    
+        if hour:
+            count_sql += " AND hour = %s"
+            count_params.append(hour)
+    
+        with connection.cursor() as cursor:
+            cursor.execute(count_sql, count_params)
+            total_count = cursor.fetchone()[0]
+            
+            cursor.execute(sql, params)
+            columns = [col[0] for col in cursor.description]
+            rows = cursor.fetchall()
+    
+        data = []
+        for row in rows:
+            row_dict = dict(zip(columns, row))
+        
+            if 'timestamp' in row_dict and isinstance(row_dict['timestamp'], datetime):
+                row_dict['timestamp'] = row_dict['timestamp'].isoformat()
+        
+            data.append(row_dict)
         
         return Response({
-            'status': 'success',
-            'data': serializer.data,
-            'count': len(serializer.data),
-            'filters': {
-                'date_from': date_from,
-                'date_to': date_to,
-                'region': region,
-                'hour': hour
-            },
-            'message': f'Retrieved {len(serializer.data)} records'
-        })
+        'status': 'success',
+        'data': data,
+        'pagination': {
+            'page': page,
+            'page_size': page_size,
+            'total_count': total_count,
+            'total_pages': (total_count + page_size - 1) // page_size,
+            'has_next': page * page_size < total_count,
+            'has_previous': page > 1
+        },
+        'count': len(data),
+        'filters': {
+            'date_from': date_from,
+            'date_to': date_to,
+            'region': region,
+            'hour': hour
+        },
+        'message': f'Retrieved {len(data)} records (page {page} of {(total_count + page_size - 1) // page_size})'
+	})
 
     @action(methods=['GET'], url_path='summary', detail=False)
     def get_summary_data(self, request, *args, **kwargs):
@@ -143,7 +195,6 @@ class EnergyApiViewSet(GenericViewSet):
                 'message': 'Оба параметра from и to обязательны'
             }, status=status.HTTP_400_BAD_REQUEST)
 
-        """Исправляем формат даты"""
         try:
             if 'T' in date_from:
                 start_date = datetime.fromisoformat(date_from.replace('Z', '+00:00'))
@@ -179,23 +230,23 @@ class EnergyApiViewSet(GenericViewSet):
             queryset = queryset.filter(region=region)
         
         if hour:
-            queryset = queryset.filter(timestamp__hour=hour)
+            queryset = queryset.filter(hour=hour)
 
         """Агрегация данных"""
         summary_data = queryset.values(
-            'timestamp__date', 'timestamp__hour'
+            'timestamp', 'hour'
         ).annotate(
             total_volume=Sum('plan_GES') + Sum('plan_AES') + Sum('plan_TES') + 
                         Sum('plan_SES') + Sum('plan_VES') + Sum('plan_other'),
             avg_price=Avg('price_buy')
-        ).order_by('timestamp__date', 'timestamp__hour')
+        ).order_by('timestamp', 'hour')
         
         result = []
         for data in summary_data:
             full_timestamp = datetime.combine(
-                data['timestamp__date'], 
+                data['timestamp'], 
                 datetime.min.time()
-            ).replace(hour=data['timestamp__hour'])
+            ).replace(hour=data['hour'])
             
             result.append({
                 'timestamp': full_timestamp.isoformat(),
@@ -278,8 +329,8 @@ class EnergyApiViewSet(GenericViewSet):
 
         """Фильтрация данных с ограничением"""
         queryset = ElecReport.objects.filter(
-            timestamp__date__gte=start_date.date(),
-            timestamp__date__lte=end_date.date()
+            timestamp__gte=start_date.date(),
+            timestamp__lte=end_date.date()
         )[:50000]
         
         if region:
@@ -293,12 +344,10 @@ class EnergyApiViewSet(GenericViewSet):
         for record in queryset:
             row = {
                 'Дата': record.timestamp.strftime('%Y-%m-%d'),
-                'Время': record.timestamp.strftime('%H:%M'),
                 'Регион': record.region,
-                'Час': record.timestamp.hour
+                'Час': record.hour
             }
             
-            """Добавляем все числовые поля"""
             fields = [
                 'plan_GES', 'plan_AES', 'plan_TES', 'plan_SES', 'plan_VES', 'plan_other',
                 'techmin_GES', 'techmin_AES', 'techmin_TES', 'techmin_SES', 'techmin_VES', 'techmin_other',
@@ -335,3 +384,4 @@ class EnergyApiViewSet(GenericViewSet):
         response['Content-Disposition'] = 'attachment; filename="energy_report.xlsx"'
         
         return response
+

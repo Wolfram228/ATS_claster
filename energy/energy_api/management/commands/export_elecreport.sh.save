@@ -1,0 +1,45 @@
+#!/bin/bash
+DB_NAME="energy_db"
+DB_USER="energy_user"
+DB_HOST="localhost"
+OUTPUT_DIR="/home/energy_user/ATS_project/exports"
+DATE_FROM="${1:-2023-02-13}"
+DATE_TO="${2:-$(date +%Y-%m-%d)}"
+REGION="${3:-}"
+TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+FILENAME="elecreport_${DATE_FROM}_${DATE_TO}_${TIMESTAMP}.csv"
+FULL_PATH="${OUTPUT_DIR}/${FILENAME}"
+mkdir -p "$OUTPUT_DIR"
+
+
+WHERE_CONDITIONS="timestamp >= '$DATE_FROM'::date AND timestamp <= '$DATE_TO'::date"
+if [ ! -z "$REGION" ]; then
+    WHERE_CONDITIONS="$WHERE_CONDITIONS AND region = '$REGION'"
+fi
+
+export PGPASSWORD='energy~ATS%istu'
+
+
+psql -d "$DB_NAME" -U "$DB_USER" -h "$DB_HOST" -c "\copy (
+    SELECT 
+        timestamp,
+        convert_from(bytea(region), '') as region,
+        hour,
+        \"plan_GES\", \"plan_AES\", \"plan_TES\", \"plan_SES\", \"plan_VES\", plan_other,
+        \"techmin_GES\", \"techmin_AES\", \"techmin_TES\", \"techmin_SES\", \"techmin_VES\", techmin_other,
+        \"technomin_GES\", \"technomin_AES\", \"technomin_TES\", \"technomin_SES\", \"technomin_VES\", technomin_other,
+        \"techmax_GES\", \"techmax_AES\", \"techmax_TES\", \"techmax_SES\", \"techmax_VES\", techmax_other,
+        plan_consumption, plan_export, plan_import,
+        price_buy, price_sell, full_plan
+    FROM public.elec_reports
+    WHERE $WHERE_CONDITIONS
+    ORDER BY timestamp, region, hour
+) TO '$FULL_PATH' WITH CSV HEADER DELIMITER ';' ENCODING 'UTF8';"
+
+if [ -f "$FULL_PATH" ]; then
+    ROW_COUNT=$(($(wc -l < "$FULL_PATH") - 1))
+else
+    ROW_COUNT=0
+fi
+
+echo "{\"file\":\"$FILENAME\",\"path\":\"$FULL_PATH\",\"records\":$ROW_COUNT,\"date_from\":\"$DATE_FROM\",\"date_to\":\"$DATE_TO\"}"

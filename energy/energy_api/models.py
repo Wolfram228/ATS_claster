@@ -2,7 +2,7 @@ from django.db import models
 
 class ElecReport(models.Model):
     region = models.CharField(max_length=255)
-    timestamp = models.DateTimeField()
+    timestamp = models.DateField()
     hour = models.IntegerField()
     
     # План генерации

@@ -57,9 +57,10 @@ class Command(BaseCommand):
         """Основная логика команды"""
         self.stdout.write('Начало загрузки данных...')
         
-        # Загрузка за последние 2 года
+        """Загрузка за последние 2 года"""
+        start_date = datetime(2023,2,13).date()
         today = datetime.today().date()
-        start_date = today - timedelta(days=730)  # 2 года = 730 дней
+#        start_date = today - timedelta(days=730)
         
         current_date = datetime.combine(start_date, time(0))
         end_date = datetime.combine(today, time(0))
@@ -69,12 +70,10 @@ class Command(BaseCommand):
         
         while current_date <= end_date:
             try:
-                # Пропускаем будущие даты
                 if current_date.date() > today:
                     current_date += timedelta(days=1)
                     continue
-                    
-                # Проверяем, есть ли уже данные за эту дату
+                 
                 exists = LoadHistory.objects.filter(data_date=current_date.date()).first()
                 if not exists or exists.count == 0:
                     bio = self.download_xls(current_date)
@@ -103,22 +102,19 @@ class Command(BaseCommand):
     def save_data(self, df, date):
         """Сохранение данных в базу"""
         inserted = 0
-        moscow_tz = ZoneInfo("Europe/Moscow")
+        irkutsk_tz = ZoneInfo("Asia/Irkutsk")
         
         for _, row in df.iterrows():
-            # Пропускаем строки с NaN в hour
             if pd.isnull(row['hour']):
                 continue
                 
             hour_val = int(row['hour'])
             
-            # Пропускаем некорректные часы
             if hour_val < 0 or hour_val > 23:
                 continue
 
-            naive_dt = datetime.combine(date.date(), time(hour_val, 0))
-            aware_dt = naive_dt.replace(tzinfo=moscow_tz)
-
+            naive_dt = date.date()
+            
             data_dict = {}
             for col in self.COLS[2:]:
                 value = row[col]
@@ -127,7 +123,7 @@ class Command(BaseCommand):
             ElecReport.objects.create(
                 region=row['region'],
                 hour=hour_val,
-                timestamp=aware_dt,
+                timestamp=naive_dt,
                 **data_dict
             )
             inserted += 1
