@@ -9,6 +9,7 @@
             <v-card-text v-else>
                 <!-- <div class="text-h5 font-weight-bold" align="center">Динамика потребления</div> -->
                 <v-row justify="center">
+                    <div class="text-body-2 text-grey-darken-1" style="text-align: center; width: 100%"> *Данные на странице представлены по региону {{ this.selectedRegionPrev }} </div>
                     <v-col cols="12" md="6">
                         <!-- печенька за текущие сутки (lastDayBoats) -->
                         <VChart :option="pieOptions" style="width: 100%; height: 400px;" />
@@ -50,6 +51,14 @@ export default {
             lastDayLoading: state => state.lastDayLoading,
             prevDayLoading: state => state.prevDayLoading
         }),
+        selectedRegionPrev: {
+            get() {
+                return this.$store.state.selectedRegionPrev
+            },
+            set(region) {
+                this.$store.commit("SET_SELECTED_REGION_PREV", region)
+            }
+        },
 
         // список часов (0–23), по которым есть данные (за два дня)
         hours() {

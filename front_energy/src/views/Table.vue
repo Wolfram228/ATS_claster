@@ -17,14 +17,13 @@
                 hide-details
                 ></v-text-field>
             </v-col>
-            <v-col cols="12" md="3">
+            <v-col cols="12" md="2">
                 <v-menu location="bottom">
                     <template v-slot:activator="{ props }">
                         <!-- <v-btn color="blue-grey-lighten-5" v-bind="props" min-height="55px" block> {{ filters.region || regions[0].value }} </v-btn> -->
                         <v-btn color="blue-grey-lighten-5" v-bind="props" min-height="55px" block> {{ selectedRegionBeforeConfirmed || "Выбор региона" }} </v-btn>
                     </template>
 
-                    <!-- нужно реализовать список выбором из существующих в API значений -->
                     <v-list style="max-height: 300px">
                         <v-list-item
                         v-for="(region, id) in regions"
@@ -37,12 +36,29 @@
                     </v-list>
                 </v-menu>
             </v-col>
-            <v-col cols="12" md="3">
+            <v-col cols="12" md="2">
+                <v-menu location="bottom">
+                    <template v-slot:activator="{ props }">
+                        <!-- <v-btn color="blue-grey-lighten-5" v-bind="props" min-height="55px" block> {{ filters.region || regions[0].value }} </v-btn> -->
+                        <v-btn color="blue-grey-lighten-5" v-bind="props" min-height="55px" block> {{ selectedHourBeforeConfirmed ?? "Выбор часа" }} </v-btn>
+                    </template>
+
+                    <v-list style="max-height: 300px">
+                        <v-list-item
+                        v-for="(hour, id) in hours"
+                        :key="id"
+                        v-on:click="selectHour(hour)"
+                        >
+                        <v-list-item-title>{{ hour }}</v-list-item-title>
+                        </v-list-item>
+                    </v-list>
+                </v-menu>
+            </v-col>
+            <v-col cols="12" md="2">
                 <v-btn color="blue-grey-lighten-1" :disabled="isDateInvalid || !selectedRegionBeforeConfirmed" @click="fetchData" min-height="55px" block> Применить </v-btn>
                 <div v-if="isDateInvalid" class="text-error mt-2"> Введена некорректная дата </div>
-                <div v-if="!selectedRegionBeforeConfirmed" class="text-error mt-2"> Регион не выбран </div>
                 <div 
-                v-if="(!isDateInvalid && selectedRegionBeforeConfirmed) && (isDateChanged || (selectedRegion !== selectedRegionBeforeConfirmed))" 
+                v-if="(!isDateInvalid) && (isDateChanged || (selectedRegion !== selectedRegionBeforeConfirmed) || (selectedHour !== selectedHourBeforeConfirmed))" 
                 class="text-error mt-2">
                 Вы не применили изменения</div>
             </v-col>
@@ -277,7 +293,7 @@ export default {
             draftDateBefore: undefined,
             draftDateAfter: undefined,
 
-           
+            selectedHourBeforeConfirmed: "Все часы",
             //selectedRegion: undefined, - в computed, теперь напрямую по VUex
 
             showTable: false,
@@ -289,18 +305,26 @@ export default {
             if (this.isDateInvalid) return
 
             const regionChanged = this.selectedRegionBeforeConfirmed !== this.selectedRegion
-            const regionActive = this.selectedRegionBeforeConfirmed && this.selectedRegionBeforeConfirmed !== 'Все регионы'
+            const hourChanged = this.selectedHour !== this.selectedHourBeforeConfirmed
 
-            if ((!regionChanged && !this.isDateChanged) || !regionActive) return
+            if ((!regionChanged && !this.isDateChanged && !hourChanged)) return
 
             if (this.isDateChanged) this.applyDates()
             if (regionChanged) this.selectedRegion = this.selectedRegionBeforeConfirmed
+            if (hourChanged) this.selectedHour = this.selectedHourBeforeConfirmed
 
             this.$store.dispatch("fetchChangableBoats")
         },
         applyDates() {
             this.$store.commit('SET_SELECTED_DATE_BEFORE', this.draftDateBefore);
             this.$store.commit('SET_SELECTED_DATE_AFTER', this.draftDateAfter);
+        },
+        selectHour(hour) {
+            this.selectedHourBeforeConfirmed = hour
+
+            if (hour === 'Все часы') {
+                this.selectedRegionBeforeConfirmed = 'Иркутская область'
+            }
         },
         formatDateTime(dt) {
             if (!dt) return "";
@@ -588,9 +612,12 @@ export default {
     },
     computed: {
         ...mapState({
-            boats: state => state.boatsWithRegion,
-            loading: state => state.loading,
+            loading: state => state.loading
         }),
+        boats() {
+            const regionActive = this.$store.state.selectedRegion && this.$store.state.selectedRegion !== 'Все регионы'
+            return regionActive ? this.$store.state.boatsWithRegion : this.$store.state.changableDateBoats
+        },
         selectedRegion: {
             get() {
                 return this.$store.state.selectedRegion
@@ -607,11 +634,34 @@ export default {
                 this.$store.commit("SET_SELECTED_REGION_BEFORE_CONFIRMED", region)
             }
         },
+        selectedHour: {
+            get() {
+                return this.$store.state.selectedHour
+            },
+            set(hour) {
+                this.$store.commit("SET_SELECTED_HOUR", hour)
+            }
+        },
         isSelectedRegionActive() {
-            return this.selectedRegion && this.selectedRegion !== "Все регионы" ? true : false
+            return this.selectedRegion ? true : false
         },
         regions() {
-            return this.$store.getters.staticRegions;
+            const list = [...this.$store.getters.staticRegions]
+
+            if (this.selectedHourBeforeConfirmed !== 'Все часы') {
+                list.unshift({id: 0, value: "Все регионы"})
+            }
+
+            return list
+        },
+        hours() {
+            const list = ['Все часы']
+
+            for (let i = 0; i <= 23; i++) {
+                list.push(i)
+            }
+
+            return list
         },
         virtualBoats() {
             if (!this.boats) return [];
@@ -720,14 +770,16 @@ export default {
         }
     },
     created() {
-        if (!this.$store.state.lastDayDateInited) {
+        /*if (!this.$store.state.lastDayDateInited) {
             this.$store.dispatch('initLastDayDate');
+        }*/
+        if (!this.$store.state.inited) {
+            this.$store.dispatch('initBoats');
         }
 
-        if (this.isSelectedRegionActive) {
+        /*if (this.isSelectedRegionActive) {
             this.showTable = true;
-            //this.selectedRegionBeforeConfirmed = this.selectedRegion;
-        };
+        };*/
 
         this.visibleColumnKeys = this.headers.map(h => h.key);
 
