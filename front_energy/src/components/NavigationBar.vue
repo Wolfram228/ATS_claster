@@ -36,7 +36,7 @@ export default {
                 {to: "/information", name: "Информация"},
                 {to: "/table", name: "Таблица"},
                 {to: "/interactiveMap", name: "Карта"},
-                {to: "/price-analytics", name: "Цены по регионам"},
+                {to: "/price-analytics", name: "Аналитика цен"},
             ]
         }
     }
