@@ -118,6 +118,11 @@ export default createStore({
             inited: false,
             lastDayDateInited: false,
             hasChangableData: false,
+
+            // Вкладка аналитики цен
+            priceAnalyticsRows: [],
+            priceAnalyticsLoading: false,
+            priceAnalyticsError: null,
         };
     },
 
@@ -242,7 +247,17 @@ export default createStore({
         },
         SET_HAS_CHANGABLE_DATA(state, value) {
             state.hasChangableData = value;
-        }
+        },
+        // Вкладка аналитики цен
+        SET_PRICE_ANALYTICS_ROWS(state, value) {
+            state.priceAnalyticsRows = value;
+        },
+        SET_PRICE_ANALYTICS_LOADING(state, value) {
+            state.priceAnalyticsLoading = value;
+        },
+        SET_PRICE_ANALYTICS_ERROR(state, value) {
+            state.priceAnalyticsError = value;
+        },
     },
 
     actions: {
@@ -452,6 +467,57 @@ export default createStore({
                 commit('SET_ERROR', e);
             } finally {
                 commit('SET_PREV_DAY_LOADING', false);
+            }
+        },
+        // Вкладка аналитики цен
+        async fetchPriceAnalyticsRows({ commit }, { from, to }) {
+            try {
+                commit('SET_PRICE_ANALYTICS_LOADING', true)
+                commit('SET_PRICE_ANALYTICS_ERROR', null)
+
+                console.log('selected timestamp before (price page):', from);
+                console.log('selected timestamp after (price page):', to);
+
+                let page = 1
+                let hasNext = true
+                const allRows = []
+
+                while (hasNext) {
+                    const params = new URLSearchParams({
+                        from,
+                        to,
+                        page: String(page),
+                    })
+
+                    console.log('current pagination page:', page);
+
+                    const url = `https://cloud-a.istu.edu/api/table-data/?${params.toString()}`
+                    const response = await fetch(url)
+
+                    if (!response.ok) {
+                        throw new Error(`Ошибка загрузки данных: ${response.status}`)
+                    }
+
+                    const json = await response.json()
+                    const data = Array.isArray(json.data) ? json.data : []
+
+                    console.log('API LENGTH (price page):', data.length);
+
+                    const pagination = json.pagination || {}
+
+                    allRows.push(...data)
+
+                    hasNext = Boolean(pagination.has_next)
+                    page += 1
+                }
+
+                commit('SET_PRICE_ANALYTICS_ROWS', allRows)
+            } catch (error) {
+                console.error('fetchPriceAnalyticsRows error', error)
+                commit('SET_PRICE_ANALYTICS_ROWS', [])
+                commit('SET_PRICE_ANALYTICS_ERROR', error)
+            } finally {
+                commit('SET_PRICE_ANALYTICS_LOADING', false)
             }
         },
     }

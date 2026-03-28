@@ -26,17 +26,19 @@
                 <div v-if="selectedRegionPrevBeforeConfirmed && selectedRegionPrev !== selectedRegionPrevBeforeConfirmed" class="text-error mt-2">Вы не применили изменения</div>
             </v-col>
         </v-row>
-        <v-row>
+        <v-row v-if="lastDayLoading || prevDayLoading">
+            <v-container>
+                Загрузка данных...
+            </v-container>
+        </v-row>
+        <v-row v-else>
             <div v-if="!selectedRegionPrevBeforeConfirmed" class="text-body-2 text-grey-darken-1" style="text-align: center; width: 100%"> Текущий регион: {{ this.selectedRegionPrev }} </div>
             <v-col 
             cols="12" 
             sm="6"
             lg="3"
             v-for="i in infoArray">
-                <v-container v-if="lastDayLoading || prevDayLoading">
-                    Загрузка данных...
-                </v-container>
-                <v-container v-else>
+                <v-container>
                     <InfoCard>
                         <template v-slot:title>{{ i.title }}</template>
                         <template v-slot:info1> {{ i.info1 }}</template>

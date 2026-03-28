@@ -28,6 +28,11 @@ const routes = [
         component: () => import("../views/InteractiveMap.vue"),
     },
     {
+        path: '/price-analytics',
+        name: 'priceAnalytics',
+        component: () => import("../views/PriceAnalytics.vue")
+    },
+    {
         path: "/:pathMatch(.*)*",
         name: "NotFound",
         component: () => import("../views/NotFound.vue")
