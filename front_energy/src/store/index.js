@@ -1,5 +1,5 @@
-// src/store/index.js
 import { createStore } from 'vuex';
+import { getAccessToken, getApiBaseUrl, getSavedUser, isAuth } from '../utils/auth';
 
 // YYYY-MM-DD в ЛОКАЛЬНОЙ таймзоне
 function ymdLocal(d = new Date()) {
@@ -68,6 +68,41 @@ function normalizeBoats(data) {
     return unique;
 }
 
+async function fetchTableData({ from, to, region = '', hour = '', page, signal } = {}) {
+    const params = new URLSearchParams({
+        from,
+        to,
+    });
+
+    if (region) {
+        params.append('region', region);
+    }
+
+    if (hour) {
+        params.append('hour', hour);
+    }
+
+    if (page) {
+        params.append('page', String(page));
+    }
+
+    const token = getAccessToken();
+    const headers = token
+        ? { Authorization: `Bearer ${token}` }
+        : {};
+
+    const response = await fetch(`${getApiBaseUrl()}/api/table-data/?${params.toString()}`, {
+        headers,
+        signal,
+    });
+
+    if (!response.ok) {
+        throw new Error(`Ошибка загрузки данных: ${response.status}`);
+    }
+
+    return response.json();
+}
+
 export default createStore({
     state() {
         return {
@@ -118,6 +153,8 @@ export default createStore({
             inited: false,
             lastDayDateInited: false,
             hasChangableData: false,
+            isAuthenticated: isAuth(),
+            user: getSavedUser(),
 
             // Вкладка аналитики цен
             priceAnalyticsRows: [],
@@ -239,6 +276,12 @@ export default createStore({
         SET_ABORT_CONTROLLER(state, controller) {
             state.abortController = controller;
         },
+        SET_AUTHENTICATED(state, value) {
+            state.isAuthenticated = value;
+        },
+        SET_USER(state, value) {
+            state.user = value;
+        },
         SET_INITED(state, value) {
             state.inited = value;
         },
@@ -352,30 +395,16 @@ export default createStore({
                     console.log('hour selected:', state.selectedHour);
                 }
 
-                const params = new URLSearchParams({
+                const json = await fetchTableData({
                     from: state.selectedDateBefore,
                     to: state.selectedDateAfter,
+                    region: regionActive ? state.selectedRegion : '',
+                    hour: hourActive ? state.selectedHour : '',
+                    signal,
                 });
-
-                if (regionActive) {
-                    params.append('region', state.selectedRegion);
-                }
-
-                if (hourActive) {
-                    params.append('hour', state.selectedHour);
-                }
-
-                const url = `https://cloud-a.istu.edu/api/table-data/?${params.toString()}`;
-                const response = await fetch(url, { signal });
 
                 // если за это время стартовал новый запрос – выходим
                 if (controller !== state.abortController) return;
-
-                if (!response.ok) {
-                    throw new Error(`Ошибка загрузки данных: ${response.status}`);
-                }
-
-                const json = await response.json();
                 const data = json.data || [];
 
                 const boats = normalizeBoats(data);
@@ -417,10 +446,11 @@ export default createStore({
                 const regionPrevActive = state.selectedRegionPrev && state.selectedRegionPrev !== 'Все регионы';
                 if (regionPrevActive) console.log('prev region selected:', state.selectedRegionPrev);
 
-                const url = regionPrevActive ? `https://cloud-a.istu.edu/api/table-data/?from=${from}&to=${to}&region=${state.selectedRegionPrev}` : `https://cloud-a.istu.edu/api/table-data/?from=${from}&to=${to}`
-                const response = await fetch(url);
-
-                const json = await response.json();
+                const json = await fetchTableData({
+                    from,
+                    to,
+                    region: regionPrevActive ? state.selectedRegionPrev : '',
+                });
                 const data = json.data || [];
                 const normalized = normalizeBoats(data);
 
@@ -447,13 +477,11 @@ export default createStore({
                 const regionPrevActive = state.selectedRegionPrev && state.selectedRegionPrev !== 'Все регионы';
                 if (regionPrevActive) console.log('prev region selected:', state.selectedRegionPrev);
 
-                const url = regionPrevActive ? `https://cloud-a.istu.edu/api/table-data/?from=${from}&to=${to}&region=${state.selectedRegionPrev}` : `https://cloud-a.istu.edu/api/table-data/?from=${from}&to=${to}`
-                const response = await fetch(url);
-
-                if (!response.ok) {
-                    throw new Error(`Failed to fetch prev day boats: ${response.status}`);
-                }
-                const json = await response.json();
+                const json = await fetchTableData({
+                    from,
+                    to,
+                    region: regionPrevActive ? state.selectedRegionPrev : '',
+                });
                 const data = json.data || [];
                 const normalized = normalizeBoats(data);
 
@@ -483,22 +511,13 @@ export default createStore({
                 const allRows = []
 
                 while (hasNext) {
-                    const params = new URLSearchParams({
-                        from,
-                        to,
-                        page: String(page),
-                    })
-
                     console.log('current pagination page:', page);
 
-                    const url = `https://cloud-a.istu.edu/api/table-data/?${params.toString()}`
-                    const response = await fetch(url)
-
-                    if (!response.ok) {
-                        throw new Error(`Ошибка загрузки данных: ${response.status}`)
-                    }
-
-                    const json = await response.json()
+                    const json = await fetchTableData({
+                        from,
+                        to,
+                        page,
+                    })
                     const data = Array.isArray(json.data) ? json.data : []
 
                     console.log('API LENGTH (price page):', data.length);

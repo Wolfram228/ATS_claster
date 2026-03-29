@@ -10,6 +10,9 @@
                 <a href="/docs/ru/sub-section/overview.html" class="ms-auto mr-3">
                     <v-btn class="doc-link">Документация</v-btn>
                 </a>
+                <router-link to="/lk" class="mr-1" style="text-decoration:none;">
+                    <v-btn>Личный кабинет</v-btn>
+                </router-link>
             </div>
         </v-app-bar-title>
     </v-app-bar>

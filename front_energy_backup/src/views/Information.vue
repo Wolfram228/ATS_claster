@@ -11,7 +11,7 @@
 
                     <v-list style="max-height: 300px">
                         <v-list-item
-                        v-for="(regionPrev, id) in regionsPrev"
+                        v-for="(regionPrev, id) in regions"
                         :key="id"
                         :value="id"
                         v-on:click="selectedRegionPrevBeforeConfirmed = regionPrev.value"
@@ -26,26 +26,33 @@
                 <div v-if="selectedRegionPrevBeforeConfirmed && selectedRegionPrev !== selectedRegionPrevBeforeConfirmed" class="text-error mt-2">Вы не применили изменения</div>
             </v-col>
         </v-row>
-        <v-row>
+        <v-row v-if="lastDayLoading || prevDayLoading">
+            <v-container>
+                Загрузка данных...
+            </v-container>
+        </v-row>
+        <v-row v-else>
             <div v-if="!selectedRegionPrevBeforeConfirmed" class="text-body-2 text-grey-darken-1" style="text-align: center; width: 100%"> Текущий регион: {{ this.selectedRegionPrev }} </div>
             <v-col 
             cols="12" 
             sm="6"
             lg="3"
             v-for="i in infoArray">
-                <InfoCard>
-                    <template v-slot:title>{{ i.title }}</template>
-                    <template v-slot:info1> {{ i.info1 }}</template>
-                    <template v-slot:info2> {{ i.info2 }}</template>
-                    <template v-slot:percentage>
-                        <div 
-                            class="text-caption" 
-                            :class="i.percentage.startsWith('-') ? 'text-error' : 'text-success'"
-                        >
-                            {{ i.percentage }}
-                        </div>
-                    </template>
-                </InfoCard>
+                <v-container>
+                    <InfoCard>
+                        <template v-slot:title>{{ i.title }}</template>
+                        <template v-slot:info1> {{ i.info1 }}</template>
+                        <template v-slot:info2> {{ i.info2 }}</template>
+                        <template v-slot:percentage>
+                            <div 
+                                class="text-caption" 
+                                :class="i.percentage.startsWith('-') ? 'text-error' : 'text-success'"
+                            >
+                                {{ i.percentage }}
+                            </div>
+                        </template>
+                    </InfoCard>
+                </v-container>
             </v-col>
         </v-row>
         <!--<v-row>
@@ -94,7 +101,7 @@
                                 hide-details
                                 ></v-text-field>
                             </v-col>
-                            <v-col cols="12" md="3">
+                            <v-col cols="12" md="2">
                                 <v-menu location="top" class="flex-grow-1 me-3">
                                     <template v-slot:activator="{ props }">
                                         <!-- <v-btn color="blue-grey-lighten-5" v-bind="props" min-height="55px" block> {{ selectedRegion }} </v-btn> -->
@@ -113,11 +120,29 @@
                                     </v-list>
                                 </v-menu>
                             </v-col>
-                            <v-col cols="12" md="3">
+                            <v-col cols="12" md="2">
+                                <v-menu location="bottom">
+                                    <template v-slot:activator="{ props }">
+                                        <!-- <v-btn color="blue-grey-lighten-5" v-bind="props" min-height="55px" block> {{ filters.region || regions[0].value }} </v-btn> -->
+                                        <v-btn color="blue-grey-lighten-5" v-bind="props" min-height="55px" block> {{ selectedHourBeforeConfirmed ?? "Выбор часа" }} </v-btn>
+                                    </template>
+
+                                    <v-list style="max-height: 300px">
+                                        <v-list-item
+                                        v-for="(hour, id) in hours"
+                                        :key="id"
+                                        v-on:click="selectHour(hour)"
+                                        >
+                                        <v-list-item-title>{{ hour }}</v-list-item-title>
+                                        </v-list-item>
+                                    </v-list>
+                                </v-menu>
+                            </v-col>
+                            <v-col cols="12" md="2">
                                 <v-btn color="blue-grey-lighten-1" :disabled="isDateInvalid" @click="fetchData" min-height="55px" block> Применить </v-btn>
                                 <div v-if="isDateInvalid" class="text-error mt-2"> Введена некорректная дата </div>
                                 <div 
-                                v-if="(!isDateInvalid) && (isDateChanged || (selectedRegionBeforeConfirmed && selectedRegion !== selectedRegionBeforeConfirmed))" 
+                                v-if="(!isDateInvalid) && (isDateChanged || (selectedRegion !== selectedRegionBeforeConfirmed) || (selectedHour !== selectedHourBeforeConfirmed))" 
                                 class="text-error mt-2">
                                 Вы не применили изменения
                                 </div>
@@ -177,7 +202,8 @@ export default {
         //selectedRegion: undefined,
 
         selectedRegionPrevBeforeConfirmed: undefined,
-        selectedRegionPrev: undefined,
+
+        selectedHourBeforeConfirmed: "Все часы",
 
         draftDateBefore: null,
         draftDateAfter: null,
@@ -193,19 +219,32 @@ export default {
 
             loading: state => state.loading,
             inited: state => state.inited,
-            hasChangableData: state => state.hasChangableData
+            hasChangableData: state => state.hasChangableData,
+            lastDayLoading: state => state.lastDayLoading,
+            prevDayLoading: state => state.prevDayLoading
         }),
         
-
         regions() {
-            return [
-                { id: 0, value: "Все регионы" },
-                ...this.$store.getters.staticRegions
-            ]
+            const list = [...this.$store.getters.staticRegions]
+
+            if (this.selectedHourBeforeConfirmed !== 'Все часы') {
+                list.unshift({id: 0, value: "Все регионы"})
+            }
+
+            return list
         },
-        regionsPrev() {
+        hours() {
+            const list = ['Все часы']
+
+            for (let i = 0; i <= 23; i++) {
+                list.push(i)
+            }
+
+            return list
+        },
+        /*regionsPrev() {
             return this.$store.getters.regionsPrev;
-        },
+        },*/
 
         selectedRegion: {
             get() {
@@ -223,7 +262,22 @@ export default {
                 this.$store.commit("SET_SELECTED_REGION_BEFORE_CONFIRMED", region)
             }
         },
-
+        selectedRegionPrev: {
+            get() {
+                return this.$store.state.selectedRegionPrev
+            },
+            set(region) {
+                this.$store.commit("SET_SELECTED_REGION_PREV", region)
+            }
+        },
+        selectedHour: {
+            get() {
+                return this.$store.state.selectedHour
+            },
+            set(hour) {
+                this.$store.commit("SET_SELECTED_HOUR", hour)
+            }
+        },
         isDateChanged() {
             return ( this.draftDateBefore !== this.$store.state.selectedDateBefore || this.draftDateAfter !== this.$store.state.selectedDateAfter )
         },
@@ -626,11 +680,13 @@ export default {
 
             const regionChanged = this.selectedRegionBeforeConfirmed !== this.selectedRegion
             //const regionActive = this.selectedRegionBeforeConfirmed && this.selectedRegionBeforeConfirmed !== 'Все регионы'
+            const hourChanged = this.selectedHour !== this.selectedHourBeforeConfirmed
 
-            if (((!regionChanged || !this.selectedRegionBeforeConfirmed) && !this.isDateChanged)) return
+            if ((!regionChanged || !this.selectedRegionBeforeConfirmed) && !this.isDateChanged && !hourChanged) return
 
             if (this.isDateChanged) this.applyDates()
-            if (regionChanged && this.selectedRegionBeforeConfirmed) this.selectedRegion = this.selectedRegionBeforeConfirmed
+            if (hourChanged) this.selectedHour = this.selectedHourBeforeConfirmed
+            if (regionChanged) this.selectedRegion = this.selectedRegionBeforeConfirmed
 
             this.$store.dispatch("fetchChangableBoats")
         },
@@ -662,6 +718,8 @@ export default {
             if (this.selectedRegionPrevBeforeConfirmed) {
                 this.selectedRegionPrev = this.selectedRegionPrevBeforeConfirmed;
             }
+            this.$store.dispatch("fetchLastDayBoats")
+            this.$store.dispatch("fetchPrevDayBoats")
         },
 
         // агрегация по часам: для графиков (объём + средняя цена за час)
@@ -739,6 +797,13 @@ export default {
         applyDates() {
             this.$store.commit('SET_SELECTED_DATE_BEFORE', this.draftDateBefore);
             this.$store.commit('SET_SELECTED_DATE_AFTER', this.draftDateAfter);
+        },
+        selectHour(hour) {
+            this.selectedHourBeforeConfirmed = hour
+
+            if (hour === 'Все часы') {
+                this.selectedRegionBeforeConfirmed = 'Иркутская область'
+            }
         }
     },
 
@@ -750,7 +815,7 @@ export default {
         const regionActive = this.selectedRegion && this.selectedRegion !== 'Все регионы';
         if (!regionActive) this.selectedRegion = this.regions[0]?.value;;
 
-        this.selectedRegionPrev = this.regionsPrev[0]?.value;
+        //this.selectedRegionPrev = this.regionsPrev[0]?.value;
 
         this.draftDateAfter = this.$store.state.selectedDateAfter
         this.draftDateBefore = this.$store.state.selectedDateBefore

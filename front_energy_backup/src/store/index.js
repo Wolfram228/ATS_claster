@@ -79,8 +79,11 @@ export default createStore({
             changableDateBoats: [],
             boatsWithRegion: [],
 
-            selectedRegion: undefined,
+            selectedRegion: "Иркутская область",
             selectedRegionBeforeConfirmed: "Иркутская область",
+            selectedRegionPrev: "Иркутская область",
+
+            selectedHour: "Все часы",
 
             // текущие даты (инициализируются в initBoats)
             selectedDateBefore: undefined,
@@ -115,6 +118,11 @@ export default createStore({
             inited: false,
             lastDayDateInited: false,
             hasChangableData: false,
+
+            // Вкладка аналитики цен
+            priceAnalyticsRows: [],
+            priceAnalyticsLoading: false,
+            priceAnalyticsError: null,
         };
     },
 
@@ -154,7 +162,7 @@ export default createStore({
         },
 
         // регионы для lastDayBoats + prevDayBoats
-        regionsPrev(state) {
+        /*regionsPrev(state) {
             const set = new Set();
 
             const all = [
@@ -179,7 +187,7 @@ export default createStore({
                     value: name
                 }))
             ];
-        }
+        }*/
     },
 
     mutations: {
@@ -208,6 +216,13 @@ export default createStore({
         SET_SELECTED_REGION_BEFORE_CONFIRMED(state, value) {
             state.selectedRegionBeforeConfirmed = value;
         },
+        SET_SELECTED_REGION_PREV(state, value) {
+            state.selectedRegionPrev = value;
+        },
+
+        SET_SELECTED_HOUR(state, value) {
+            state.selectedHour = value;
+        },
 
         SET_LOADING(state, value) {
             state.loading = value;
@@ -232,7 +247,17 @@ export default createStore({
         },
         SET_HAS_CHANGABLE_DATA(state, value) {
             state.hasChangableData = value;
-        }
+        },
+        // Вкладка аналитики цен
+        SET_PRICE_ANALYTICS_ROWS(state, value) {
+            state.priceAnalyticsRows = value;
+        },
+        SET_PRICE_ANALYTICS_LOADING(state, value) {
+            state.priceAnalyticsLoading = value;
+        },
+        SET_PRICE_ANALYTICS_ERROR(state, value) {
+            state.priceAnalyticsError = value;
+        },
     },
 
     actions: {
@@ -261,12 +286,19 @@ export default createStore({
             const { from, to } = getLastDayRange();
             const selectedIsToday = state.selectedDateBefore === from && state.selectedDateAfter === to;
             const regionActive = state.selectedRegion && state.selectedRegion !== 'Все регионы';
+            const regionsEqual = state.selectedRegion === state.selectedRegionPrev;
 
-            // Если дата today + все регионы - можно переиспользовать lastDayBoats без запроса
-            if (selectedIsToday && !regionActive) {
-                commit('SET_CHANGABLE_BOATS', state.lastDayBoats);
-                commit('SET_HAS_CHANGABLE_DATA', true);
-                commit('SET_BOATS_WITH_REGION', []);
+            // Если дата today + регионы одинаковые - можно переиспользовать lastDayBoats без запроса
+            if (selectedIsToday && regionsEqual) {
+                if (regionActive) {
+                    commit('SET_CHANGABLE_BOATS', []);
+                    commit('SET_HAS_CHANGABLE_DATA', true);
+                    commit('SET_BOATS_WITH_REGION', state.lastDayBoats);
+                } else {
+                    commit('SET_CHANGABLE_BOATS', state.lastDayBoats);
+                    commit('SET_HAS_CHANGABLE_DATA', true);
+                    commit('SET_BOATS_WITH_REGION', []);
+                }
             } else {
                 // иначе проверяем: не лежат ли в сторе уже актуальный данные (например, с Table.vue)
                 const alreadyHasRegionData = regionActive && Array.isArray(state.boatsWithRegion) && state.boatsWithRegion.length > 0;
@@ -304,6 +336,7 @@ export default createStore({
             const { signal } = controller;
 
             try {
+                commit('SET_HAS_CHANGABLE_DATA', false);
                 commit('SET_LOADING', true);
                 commit('SET_ERROR', null);
 
@@ -313,8 +346,26 @@ export default createStore({
 
                 const regionActive = state.selectedRegion && state.selectedRegion !== 'Все регионы';
                 if (regionActive) console.log('region selected:', state.selectedRegion);
+                
+                const hourActive = state.selectedHour !== undefined && state.selectedHour !== null && state.selectedHour !== '' && state.selectedHour !== 'Все часы';
+                if (hourActive) {
+                    console.log('hour selected:', state.selectedHour);
+                }
 
-                const url = regionActive ? `https://cloud-a.istu.edu/api/table-data/?from=${state.selectedDateBefore}&to=${state.selectedDateAfter}&region=${state.selectedRegion}` : `https://cloud-a.istu.edu/api/table-data/?from=${state.selectedDateBefore}&to=${state.selectedDateAfter}`
+                const params = new URLSearchParams({
+                    from: state.selectedDateBefore,
+                    to: state.selectedDateAfter,
+                });
+
+                if (regionActive) {
+                    params.append('region', state.selectedRegion);
+                }
+
+                if (hourActive) {
+                    params.append('hour', state.selectedHour);
+                }
+
+                const url = `https://cloud-a.istu.edu/api/table-data/?${params.toString()}`;
                 const response = await fetch(url, { signal });
 
                 // если за это время стартовал новый запрос – выходим
@@ -335,13 +386,13 @@ export default createStore({
                 if (mode === 'change') {
                     if (regionActive) {
                         commit('SET_BOATS_WITH_REGION', boats);
-                        commit('SET_HAS_CHANGABLE_DATA', true);
                         commit('SET_CHANGABLE_BOATS', [])
                     } else {
                         commit('SET_CHANGABLE_BOATS', boats);
-                        commit('SET_HAS_CHANGABLE_DATA', true);
                         commit('SET_BOATS_WITH_REGION', []);
                     }
+
+                    commit('SET_HAS_CHANGABLE_DATA', true);
                 }
             } catch (error) {
                 if (controller === state.abortController) {
@@ -355,7 +406,7 @@ export default createStore({
                 }
             }
         },
-        async fetchLastDayBoats({ commit }) {
+        async fetchLastDayBoats({ state, commit }) {
             const { from, to } = getLastDayRange();
 
             try {
@@ -363,8 +414,11 @@ export default createStore({
                 console.log('last day timestamp before (info page):', from);
                 console.log('last day timestamp after (info page):', to);
 
-                const response = await fetch(`https://cloud-a.istu.edu/api/table-data/?from=${from}&to=${to}`);
-                if (!response.ok) throw new Error(`Ошибка загрузки lastDay: ${response.status}`);
+                const regionPrevActive = state.selectedRegionPrev && state.selectedRegionPrev !== 'Все регионы';
+                if (regionPrevActive) console.log('prev region selected:', state.selectedRegionPrev);
+
+                const url = regionPrevActive ? `https://cloud-a.istu.edu/api/table-data/?from=${from}&to=${to}&region=${state.selectedRegionPrev}` : `https://cloud-a.istu.edu/api/table-data/?from=${from}&to=${to}`
+                const response = await fetch(url);
 
                 const json = await response.json();
                 const data = json.data || [];
@@ -382,7 +436,7 @@ export default createStore({
                 commit('SET_LAST_DAY_LOADING', false);
             }
         },
-        async fetchPrevDayBoats({ commit }) {
+        async fetchPrevDayBoats({ state, commit }) {
             const { from, to } = getPrevDayRange();
 
             try {
@@ -390,7 +444,12 @@ export default createStore({
                 console.log('prev day timestamp before (info page):', from);
                 console.log('prev day timestamp after (info page):', to);
 
-                const response = await fetch(`https://cloud-a.istu.edu/api/table-data/?from=${from}&to=${to}`);
+                const regionPrevActive = state.selectedRegionPrev && state.selectedRegionPrev !== 'Все регионы';
+                if (regionPrevActive) console.log('prev region selected:', state.selectedRegionPrev);
+
+                const url = regionPrevActive ? `https://cloud-a.istu.edu/api/table-data/?from=${from}&to=${to}&region=${state.selectedRegionPrev}` : `https://cloud-a.istu.edu/api/table-data/?from=${from}&to=${to}`
+                const response = await fetch(url);
+
                 if (!response.ok) {
                     throw new Error(`Failed to fetch prev day boats: ${response.status}`);
                 }
@@ -408,6 +467,57 @@ export default createStore({
                 commit('SET_ERROR', e);
             } finally {
                 commit('SET_PREV_DAY_LOADING', false);
+            }
+        },
+        // Вкладка аналитики цен
+        async fetchPriceAnalyticsRows({ commit }, { from, to }) {
+            try {
+                commit('SET_PRICE_ANALYTICS_LOADING', true)
+                commit('SET_PRICE_ANALYTICS_ERROR', null)
+
+                console.log('selected timestamp before (price page):', from);
+                console.log('selected timestamp after (price page):', to);
+
+                let page = 1
+                let hasNext = true
+                const allRows = []
+
+                while (hasNext) {
+                    const params = new URLSearchParams({
+                        from,
+                        to,
+                        page: String(page),
+                    })
+
+                    console.log('current pagination page:', page);
+
+                    const url = `https://cloud-a.istu.edu/api/table-data/?${params.toString()}`
+                    const response = await fetch(url)
+
+                    if (!response.ok) {
+                        throw new Error(`Ошибка загрузки данных: ${response.status}`)
+                    }
+
+                    const json = await response.json()
+                    const data = Array.isArray(json.data) ? json.data : []
+
+                    console.log('API LENGTH (price page):', data.length);
+
+                    const pagination = json.pagination || {}
+
+                    allRows.push(...data)
+
+                    hasNext = Boolean(pagination.has_next)
+                    page += 1
+                }
+
+                commit('SET_PRICE_ANALYTICS_ROWS', allRows)
+            } catch (error) {
+                console.error('fetchPriceAnalyticsRows error', error)
+                commit('SET_PRICE_ANALYTICS_ROWS', [])
+                commit('SET_PRICE_ANALYTICS_ERROR', error)
+            } finally {
+                commit('SET_PRICE_ANALYTICS_LOADING', false)
             }
         },
     }
