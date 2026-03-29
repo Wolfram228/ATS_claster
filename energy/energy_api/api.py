@@ -17,6 +17,8 @@ from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet
+from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from energy_api.models import ElecReport, LoadHistory
 from energy_api.serializers import ElecReportSerializer, LoadHistorySerializer
@@ -25,8 +27,9 @@ from energy_api.serializers import ElecReportSerializer, LoadHistorySerializer
 class EnergyApiViewSet(GenericViewSet):
     queryset = ElecReport.objects.all()
     serializer_class = ElecReportSerializer
+    authentication_classes = [JWTAuthentication]
 
-    @action(methods=['GET'], url_path="check-login", detail=False)
+    @action(methods=['GET'], url_path="check-login", detail=False, permission_classes=[AllowAny])
     def check_login(self, request, *args, **kwargs):
         """Проверка статуса авторизации пользователя"""
         data = {
@@ -45,7 +48,7 @@ class EnergyApiViewSet(GenericViewSet):
             'message': 'Login status retrieved successfully'
         })
 
-    @action(methods=['GET'], url_path="regions", detail=False)
+    @action(methods=['GET'], url_path="regions", detail=False, permission_classes=[AllowAny])
     def get_region_list(self, request, *args, **kwargs):
         """Список всех регионов"""
         cache_key = 'regions_list'
@@ -62,7 +65,7 @@ class EnergyApiViewSet(GenericViewSet):
             'message': 'Regions list retrieved successfully'
         })
 
-    @action(methods=['GET'], url_path='table-data', detail=False)
+    @action(methods=['GET'], url_path='table-data', detail=False, permission_classes=[IsAuthenticated])
     def get_table_data(self, request, *args, **kwargs):
         """Табличные данные с фильтрацией"""
         date_from = request.GET.get('from')
@@ -179,11 +182,11 @@ class EnergyApiViewSet(GenericViewSet):
             'hour': hour
         },
         'message': f'Retrieved {len(data)} records (page {page} of {(total_count + page_size - 1) // page_size})'
-	})
+    })
 
-    @action(methods=['GET'], url_path='summary', detail=False)
+    @action(methods=['GET'], url_path='summary', detail=False, permission_classes=[IsAuthenticated])
     def get_summary_data(self, request, *args, **kwargs):
-        """Сводные данные по объему и ценам"""
+        """Сводные данные по объему и ценам """
         date_from = request.GET.get('from')
         date_to = request.GET.get('to')
         region = request.GET.get('region')
@@ -270,7 +273,7 @@ class EnergyApiViewSet(GenericViewSet):
             'message': f'Retrieved {len(result)} summary records'
         })
 
-    @action(methods=['GET'], url_path='load-history', detail=False)
+    @action(methods=['GET'], url_path='load-history', detail=False, permission_classes=[IsAuthenticated])
     def get_load_history(self, request, *args, **kwargs):
         """История загрузки данных"""
         cache_key = 'load_history'
@@ -299,7 +302,7 @@ class EnergyApiViewSet(GenericViewSet):
             'message': f'Retrieved {len(response_data)} history records'
         })
 
-    @action(methods=['GET'], url_path='download-report', detail=False)
+    @action(methods=['GET'], url_path='download-report', detail=False, permission_classes=[IsAuthenticated])
     def download_report(self, request, *args, **kwargs):
         """Скачать Excel отчет"""
         date_from = request.GET.get('from')
@@ -384,4 +387,3 @@ class EnergyApiViewSet(GenericViewSet):
         response['Content-Disposition'] = 'attachment; filename="energy_report.xlsx"'
         
         return response
-
