@@ -1,5 +1,5 @@
 import { createStore } from 'vuex';
-import { getAccessToken, getApiBaseUrl, getSavedUser, isAuth } from '../utils/auth';
+import { authFetch, getSavedUser, isAuth } from '../utils/auth';
 
 // YYYY-MM-DD в ЛОКАЛЬНОЙ таймзоне
 function ymdLocal(d = new Date()) {
@@ -86,19 +86,9 @@ async function fetchTableData({ from, to, region = '', hour = '', page, signal }
         params.append('page', String(page));
     }
 
-    const token = getAccessToken();
-    const headers = token
-        ? { Authorization: `Bearer ${token}` }
-        : {};
-
-    const response = await fetch(`${getApiBaseUrl()}/api/table-data/?${params.toString()}`, {
-        headers,
+    const response = await authFetch(`/api/table-data/?${params.toString()}`, {
         signal,
     });
-
-    if (!response.ok) {
-        throw new Error(`Ошибка загрузки данных: ${response.status}`);
-    }
 
     return response.json();
 }
@@ -530,6 +520,7 @@ export default createStore({
                     page += 1
                 }
 
+                console.log('FIRST PRICE ANALYTICS ROW:', allRows[0])
                 commit('SET_PRICE_ANALYTICS_ROWS', allRows)
             } catch (error) {
                 console.error('fetchPriceAnalyticsRows error', error)

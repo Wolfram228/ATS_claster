@@ -34,6 +34,11 @@ const routes = [
         component: () => import("../views/PriceAnalytics.vue")
     },
     {
+        path: "/price-modeling",
+        name: "PriceModeling",
+        component: () => import("../views/PriceModeling.vue")
+    },
+    {
         path: "/login",
         name: "login",
         component: () => import("../views/Login.vue"),
