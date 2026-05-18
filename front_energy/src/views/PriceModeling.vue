@@ -74,7 +74,7 @@
               </div>
 
               <div class="text-body-2 text-grey-darken-1 mb-4" align="left">
-                Для временных признаков используется циклическое кодирование, чтобы корректно учитывать повторяемость часов суток и дней недели.
+                Для временных признаков используется циклическое кодирование. Месяц учитывается как дамми-переменная.
               </div>
 
               <v-row>
@@ -229,6 +229,56 @@
     </v-card>
 
     <v-card
+      v-if="correlationMatrix"
+      class="pa-4 mb-4"
+      elevation="1"
+      rounded="lg"
+      variant="outlined"
+      style="border-color: rgba(0, 0, 0, 0.2)"
+    >
+      <div class="text-h5 font-weight-bold" align="left">
+        Корреляционный анализ
+      </div>
+
+      <div class="text-body-2 text-grey-darken-1 mt-1" align="left">
+        Матрица корреляций показывает силу линейной связи между ценой и выбранными объясняющими переменными.
+      </div>
+
+      <div class="correlation-scroll mt-4">
+        <v-table class="correlation-table">
+          <thead>
+            <tr>
+              <th>Переменная</th>
+              <th
+                v-for="header in correlationMatrix.headers"
+                :key="header"
+              >
+                {{ header }}
+              </th>
+            </tr>
+          </thead>
+
+          <tbody>
+            <tr
+              v-for="row in correlationMatrix.rows"
+              :key="row.label"
+            >
+              <td class="font-weight-bold">{{ row.label }}</td>
+
+              <td
+                v-for="cell in row.values"
+                :key="cell.key"
+                :style="getCorrelationCellStyle(cell.value)"
+              >
+                {{ formatCorrelation(cell.value) }}
+              </td>
+            </tr>
+          </tbody>
+        </v-table>
+      </div>
+    </v-card>
+
+    <v-card
       v-if="forecast"
       class="pa-4 mb-4"
       elevation="1"
@@ -295,6 +345,10 @@
             <td>RMSE</td>
             <td>{{ formatNumber(forecast.rmse) }} руб./МВт·ч</td>
           </tr>
+          <tr>
+            <td>Средняя прогнозируемая цена на тестовом периоде</td>
+            <td>{{ formatNumber(forecast.avgPredictedPrice) }} руб./МВт·ч</td>
+          </tr>
         </tbody>
       </v-table>
 
@@ -317,14 +371,31 @@
         Следующие выбранные факторы отсутствуют в текущих данных и не были использованы:
         {{ forecast.skippedFactors.join(', ') }}.
       </v-alert>
+    </v-card>
 
-      <div class="forecast-result mt-6">
-        Прогнозируемая цена: {{ formatNumber(forecast.price) }} руб./МВт·ч
+    <v-card
+      v-if="hourlyForecastRows.length"
+      class="pa-4 mb-4"
+      elevation="1"
+      rounded="lg"
+      variant="outlined"
+      style="border-color: rgba(0, 0, 0, 0.2)"
+    >
+      <div class="text-h5 font-weight-bold" align="left">
+        Почасовой прогноз
       </div>
 
-      <div class="text-body-2 text-grey-darken-1 mt-2 text-center">
-        Прогноз рассчитан для последнего наблюдения выбранного периода.
+      <div class="text-body-2 text-grey-darken-1 mt-1" align="left">
+        Прогноз построен для каждого часа тестового периода. В таблице показаны фактическая и прогнозная цены.
       </div>
+
+      <v-data-table
+        class="mt-4"
+        :headers="hourlyForecastHeaders"
+        :items="hourlyForecastRows"
+        density="comfortable"
+        items-per-page="24"
+      />
     </v-card>
   </v-container>
 </template>
@@ -358,12 +429,12 @@ export default {
         { label: 'Цена предыдущего часа', value: 'previousPrice' },
         { label: 'Циклический час суток', value: 'hourCycle' },
         { label: 'Циклический день недели', value: 'dayCycle' },
+        { label: 'Месяц / дамми-переменные', value: 'monthDummy' },
         { label: 'Выработка ГЭС / HPP', value: 'HPP' },
         { label: 'Выработка ТЭС / CHP или NPP', value: 'CHP' },
         { label: 'Потребление / Q_cons', value: 'Q_cons' },
         { label: 'Экспорт / Q_exp', value: 'Q_exp' },
         { label: 'Импорт / Q_imp', value: 'Q_imp' },
-        { label: 'Температура / temperature', value: 'temperature' },
       ],
 
       selectedFactors: [
@@ -371,10 +442,20 @@ export default {
         'previousPrice',
         'hourCycle',
         'dayCycle',
+        'monthDummy',
+      ],
+
+      hourlyForecastHeaders: [
+        { title: 'Дата и час', key: 'dateTime', align: 'center' },
+        { title: 'Фактическая цена, руб./МВт·ч', key: 'actualPrice', align: 'center' },
+        { title: 'Прогнозная цена, руб./МВт·ч', key: 'predictedPrice', align: 'center' },
+        { title: 'Ошибка, руб./МВт·ч', key: 'error', align: 'center' },
       ],
 
       statistics: null,
+      correlationMatrix: null,
       forecast: null,
+      hourlyForecastRows: [],
     }
   },
 
@@ -463,7 +544,9 @@ export default {
       this.appliedDateTo = this.dateTo
       this.loadedOnce = true
       this.statistics = null
+      this.correlationMatrix = null
       this.forecast = null
+      this.hourlyForecastRows = []
     },
 
     async ensureDataLoaded() {
@@ -483,6 +566,7 @@ export default {
 
       if (!rows.length) {
         this.statistics = null
+        this.correlationMatrix = null
         return
       }
 
@@ -503,6 +587,215 @@ export default {
         avgVolume: this.mean(volumes),
         totalVolume: this.sum(volumes),
       }
+
+      this.buildCorrelationAnalysis(rows)
+    },
+
+    buildCorrelationAnalysis(rows) {
+      const rowsWithLag = rows.map((row, index) => {
+        const previousRow = index > 0 ? rows[index - 1] : null
+        const previousPrice = previousRow ? this.getPrice(previousRow) : NaN
+
+        return {
+          row,
+          previousPrice,
+        }
+      })
+
+      const variables = this.getCorrelationVariables(rowsWithLag)
+
+      const usableVariables = variables.filter(variable => {
+        const values = variable.values.filter(value => Number.isFinite(value))
+        const uniqueValues = new Set(values)
+
+        return values.length >= 10 && uniqueValues.size > 1
+      })
+
+      if (usableVariables.length < 2) {
+        this.correlationMatrix = null
+        return
+      }
+
+      this.correlationMatrix = {
+        headers: usableVariables.map(variable => variable.label),
+        rows: usableVariables.map(rowVariable => {
+          return {
+            label: rowVariable.label,
+            values: usableVariables.map(colVariable => {
+              return {
+                key: `${rowVariable.key}_${colVariable.key}`,
+                value: this.pearsonCorrelation(rowVariable.values, colVariable.values),
+              }
+            }),
+          }
+        }),
+      }
+    },
+
+    getCorrelationVariables(rowsWithLag) {
+      const variables = [
+        {
+          key: 'price_sell',
+          label: 'Цена',
+          values: rowsWithLag.map(item => this.getPrice(item.row)),
+        },
+      ]
+
+      const selected = [...this.selectedFactors]
+
+      if (selected.includes('full_plan')) {
+        variables.push({
+          key: 'full_plan',
+          label: 'Объём',
+          values: rowsWithLag.map(item => this.getVolume(item.row)),
+        })
+      }
+
+      if (selected.includes('previousPrice')) {
+        variables.push({
+          key: 'previousPrice',
+          label: 'Пред. цена',
+          values: rowsWithLag.map(item => item.previousPrice),
+        })
+      }
+
+      if (selected.includes('hourCycle')) {
+        variables.push({
+          key: 'hour',
+          label: 'Час',
+          values: rowsWithLag.map(item => this.getHour(item.row)),
+        })
+      }
+
+      if (selected.includes('dayCycle')) {
+        variables.push({
+          key: 'dayOfWeek',
+          label: 'День недели',
+          values: rowsWithLag.map(item => this.getDayOfWeek(item.row)),
+        })
+      }
+
+      if (selected.includes('monthDummy')) {
+        variables.push({
+          key: 'month',
+          label: 'Месяц',
+          values: rowsWithLag.map(item => this.getMonth(item.row)),
+        })
+      }
+
+      if (selected.includes('HPP')) {
+        variables.push({
+          key: 'HPP',
+          label: 'ГЭС',
+          values: rowsWithLag.map(item => this.getFactorValue(item, 'HPP')),
+        })
+      }
+
+      if (selected.includes('CHP')) {
+        variables.push({
+          key: 'CHP',
+          label: 'ТЭС',
+          values: rowsWithLag.map(item => this.getFactorValue(item, 'CHP')),
+        })
+      }
+
+      if (selected.includes('Q_cons')) {
+        variables.push({
+          key: 'Q_cons',
+          label: 'Потребление',
+          values: rowsWithLag.map(item => this.getFactorValue(item, 'Q_cons')),
+        })
+      }
+
+      if (selected.includes('Q_exp')) {
+        variables.push({
+          key: 'Q_exp',
+          label: 'Экспорт',
+          values: rowsWithLag.map(item => this.getFactorValue(item, 'Q_exp')),
+        })
+      }
+
+      if (selected.includes('Q_imp')) {
+        variables.push({
+          key: 'Q_imp',
+          label: 'Импорт',
+          values: rowsWithLag.map(item => this.getFactorValue(item, 'Q_imp')),
+        })
+      }
+
+      return variables
+    },
+
+    pearsonCorrelation(valuesA, valuesB) {
+      const pairs = []
+
+      for (let i = 0; i < valuesA.length; i++) {
+        const a = valuesA[i]
+        const b = valuesB[i]
+
+        if (Number.isFinite(a) && Number.isFinite(b)) {
+          pairs.push([a, b])
+        }
+      }
+
+      if (pairs.length < 2) return NaN
+
+      const aValues = pairs.map(pair => pair[0])
+      const bValues = pairs.map(pair => pair[1])
+
+      const meanA = this.mean(aValues)
+      const meanB = this.mean(bValues)
+
+      const numerator = pairs.reduce((sum, pair) => {
+        return sum + (pair[0] - meanA) * (pair[1] - meanB)
+      }, 0)
+
+      const denominatorA = Math.sqrt(
+        aValues.reduce((sum, value) => sum + Math.pow(value - meanA, 2), 0)
+      )
+
+      const denominatorB = Math.sqrt(
+        bValues.reduce((sum, value) => sum + Math.pow(value - meanB, 2), 0)
+      )
+
+      const denominator = denominatorA * denominatorB
+
+      return denominator ? numerator / denominator : NaN
+    },
+
+    formatCorrelation(value) {
+      if (!Number.isFinite(Number(value))) {
+        return '—'
+      }
+
+      return Number(value).toFixed(2)
+    },
+
+    getCorrelationCellStyle(value) {
+      if (!Number.isFinite(Number(value))) {
+        return {
+          backgroundColor: 'rgba(0, 0, 0, 0.03)',
+        }
+      }
+
+      const normalized = Math.min(Math.abs(value), 1)
+      const opacity = 0.12 + normalized * 0.45
+
+      if (value > 0) {
+        return {
+          backgroundColor: `rgba(76, 175, 80, ${opacity})`,
+        }
+      }
+
+      if (value < 0) {
+        return {
+          backgroundColor: `rgba(244, 67, 54, ${opacity})`,
+        }
+      }
+
+      return {
+        backgroundColor: 'rgba(0, 0, 0, 0.03)',
+      }
     },
 
     async buildForecast() {
@@ -514,6 +807,8 @@ export default {
         alert('Недостаточно данных для построения модели. Выберите больший период.')
         return
       }
+
+      this.buildCorrelationAnalysis(rows)
 
       const dataset = this.prepareDataset(rows)
 
@@ -532,7 +827,8 @@ export default {
       const quality = this.getQualityInfo(result.r2, result.mae, result.rmse)
 
       this.forecast = {
-        price: Math.max(0, result.forecastPrice),
+        avgPredictedPrice: result.avgPredictedPrice,
+        lastPredictedPrice: result.lastPredictedPrice,
         r2: result.r2,
         mae: result.mae,
         rmse: result.rmse,
@@ -543,6 +839,15 @@ export default {
         usedFactors: dataset.usedFactors.map(value => this.getFactorLabel(value)),
         skippedFactors: dataset.skippedFactors.map(value => this.getFactorLabel(value)),
       }
+
+      this.hourlyForecastRows = result.testPredictionRows.map(item => {
+        return {
+          dateTime: this.getDateTimeLabel(item.source),
+          actualPrice: this.formatNumber(item.actual),
+          predictedPrice: this.formatNumber(item.predicted),
+          error: this.formatNumber(item.error),
+        }
+      })
     },
 
     prepareDataset(rows) {
@@ -565,6 +870,10 @@ export default {
           expandedFactors.push('hourSin', 'hourCos')
         } else if (factor === 'dayCycle') {
           expandedFactors.push('daySin', 'dayCos')
+        } else if (factor === 'monthDummy') {
+          for (let month = 2; month <= 12; month++) {
+            expandedFactors.push(`month_${month}`)
+          }
         } else {
           expandedFactors.push(factor)
         }
@@ -575,10 +884,17 @@ export default {
           .map(item => this.getFactorValue(item, factor))
           .filter(value => Number.isFinite(value))
 
-        return values.length >= Math.min(24, rows.length - 1)
+        const uniqueValues = new Set(values)
+
+        return (
+          values.length >= Math.min(24, rows.length - 1) &&
+          uniqueValues.size > 1
+        )
       })
 
-      const skippedFactors = expandedFactors.filter(factor => !usedFactors.includes(factor))
+      const skippedFactors = expandedFactors.filter(factor => {
+        return !usedFactors.includes(factor) && !factor.startsWith('month_')
+      })
 
       const preparedRows = rowsWithLag
         .map(item => {
@@ -661,16 +977,27 @@ export default {
 
       const r2 = ssTot ? 1 - ssRes / ssTot : 0
 
-      const lastX = design[design.length - 1]
-      const forecastPrice = this.dot(lastX, beta)
+      const testPredictionRows = testPredictions.map((prediction, index) => {
+        const datasetIndex = splitIndex + index
+        const actual = yTest[index]
+
+        return {
+          source: datasetRows[datasetIndex].source,
+          actual,
+          predicted: prediction,
+          error: prediction - actual,
+        }
+      })
 
       return {
-        forecastPrice,
+        avgPredictedPrice: this.mean(testPredictions),
+        lastPredictedPrice: testPredictions[testPredictions.length - 1],
         r2,
         mae,
         rmse,
         trainCount: yTrain.length,
         testCount: yTest.length,
+        testPredictionRows,
       }
     },
 
@@ -724,6 +1051,22 @@ export default {
       return Number.isNaN(date.getTime()) ? NaN : date.getDay()
     },
 
+    getMonth(row) {
+      const date = new Date(row.timestamp)
+      return Number.isNaN(date.getTime()) ? NaN : date.getMonth() + 1
+    },
+
+    getDateTimeLabel(row) {
+      const date = row.timestamp || ''
+      const hour = this.getHour(row)
+
+      if (!Number.isFinite(hour)) {
+        return date
+      }
+
+      return `${date} ${String(hour).padStart(2, '0')}:00`
+    },
+
     getFactorValue(item, factor) {
       const row = item.row
 
@@ -755,13 +1098,23 @@ export default {
         return Number.isFinite(day) ? Math.cos((2 * Math.PI * day) / 7) : NaN
       }
 
+      if (factor.startsWith('month_')) {
+        const monthNumber = Number(factor.replace('month_', ''))
+        const currentMonth = this.getMonth(row)
+
+        if (!Number.isFinite(currentMonth) || !Number.isFinite(monthNumber)) {
+          return NaN
+        }
+
+        return currentMonth === monthNumber ? 1 : 0
+      }
+
       const aliases = {
-        HPP: ['HPP', 'hpp', 'hydro', 'ges'],
-        CHP: ['CHP', 'NPP', 'chp', 'npp', 'tes'],
-        Q_cons: ['Q_cons', 'q_cons', 'consumption'],
-        Q_exp: ['Q_exp', 'q_exp', 'export'],
-        Q_imp: ['Q_imp', 'q_imp', 'import'],
-        temperature: ['temperature', 'Temperature', 'temp'],
+        HPP: ['plan_GES', 'HPP', 'hpp', 'hydro', 'ges'],
+        CHP: ['plan_TES', 'CHP', 'NPP', 'chp', 'npp', 'tes'],
+        Q_cons: ['plan_consumption', 'Q_cons', 'q_cons', 'consumption'],
+        Q_exp: ['plan_export', 'Q_exp', 'q_exp', 'export'],
+        Q_imp: ['plan_import', 'Q_imp', 'q_imp', 'import'],
       }
 
       const fields = aliases[factor] || [factor]
@@ -786,18 +1139,29 @@ export default {
         dayCycle: 'Циклический день недели',
         daySin: 'День недели sin',
         dayCos: 'День недели cos',
+        monthDummy: 'Месяц / дамми-переменные',
+        month_2: 'Февраль',
+        month_3: 'Март',
+        month_4: 'Апрель',
+        month_5: 'Май',
+        month_6: 'Июнь',
+        month_7: 'Июль',
+        month_8: 'Август',
+        month_9: 'Сентябрь',
+        month_10: 'Октябрь',
+        month_11: 'Ноябрь',
+        month_12: 'Декабрь',
         HPP: 'Выработка ГЭС / HPP',
         CHP: 'Выработка ТЭС / CHP или NPP',
         Q_cons: 'Потребление / Q_cons',
         Q_exp: 'Экспорт / Q_exp',
         Q_imp: 'Импорт / Q_imp',
-        temperature: 'Температура / temperature',
       }
 
       return labels[value] || value
     },
 
-    getQualityInfo(r2, mae, rmse) {
+    getQualityInfo(r2) {
       if (r2 >= 0.7) {
         return {
           label: 'Высокое качество',
@@ -815,13 +1179,6 @@ export default {
       if (r2 >= 0) {
         return {
           label: 'Низкое качество',
-          color: 'orange-lighten-1',
-        }
-      }
-
-      if (mae < rmse) {
-        return {
-          label: 'Требуется больше факторов',
           color: 'orange-lighten-1',
         }
       }
@@ -970,5 +1327,21 @@ td:first-child {
 
 td {
   padding: 10px 16px;
+}
+
+.correlation-scroll {
+  overflow-x: auto;
+}
+
+.correlation-table th,
+.correlation-table td {
+  text-align: center;
+  padding: 10px 12px;
+  white-space: nowrap;
+}
+
+.correlation-table td:first-child {
+  text-align: left;
+  font-weight: 600;
 }
 </style>
