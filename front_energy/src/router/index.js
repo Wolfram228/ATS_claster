@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { isAuth } from "../utils/auth";
 
 const routes = [
     {
@@ -28,16 +29,52 @@ const routes = [
         component: () => import("../views/InteractiveMap.vue"),
     },
     {
+        path: '/price-analytics',
+        name: 'priceAnalytics',
+        component: () => import("../views/PriceAnalytics.vue")
+    },
+    {
+        path: "/price-modeling",
+        name: "PriceModeling",
+        component: () => import("../views/PriceModeling.vue")
+    },
+    {
+        path: "/login",
+        name: "login",
+        component: () => import("../views/Login.vue"),
+    },
+    {
+        path: "/register",
+        name: "register",
+        component: () => import("../views/Register.vue"),
+    },
+    {
+        path: "/lk",
+        name: "lk",
+        component: () => import("../views/LK.vue"),
+        meta: { requiresAuth: true },
+    },
+    {
         path: "/:pathMatch(.*)*",
         name: "NotFound",
         component: () => import("../views/NotFound.vue")
     }
 ]
-
-export default createRouter({
+const router = createRouter({
     history: createWebHistory(),
     routes,
     scrollBehavior() {
         return { top: 0 }
     }
 })
+
+router.beforeEach((to) => {
+  const publicPages = ["/login", "/register"]
+  const isPublic = publicPages.includes(to.path)
+
+  if (!isPublic && !isAuth()) {
+    return { path: "/login" }
+  }
+})
+
+export default router
