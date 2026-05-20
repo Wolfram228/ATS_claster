@@ -17,18 +17,20 @@ from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet
+from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework_simplejwt.authentication import JWTAuthentication
 
-from energy_api.models import ElecReport, LoadHistory
-from energy_api.serializers import ElecReportSerializer, LoadHistorySerializer
+from energy_api.models import ElecReport, LoadHistory, UserProfile
+from energy_api.serializers import ElecReportSerializer, LoadHistorySerializer, UserSerializer, UserProfileSerializer
 
 
 class EnergyApiViewSet(GenericViewSet):
     queryset = ElecReport.objects.all()
     serializer_class = ElecReportSerializer
+    authentication_classes = [JWTAuthentication]
 
-    @action(methods=['GET'], url_path="check-login", detail=False)
+    @action(methods=['GET'], url_path="check-login", detail=False, permission_classes=[AllowAny])
     def check_login(self, request, *args, **kwargs):
-        """Проверка статуса авторизации пользователя"""
         data = {
             'csrf': get_token(self.request),
             'isAuthenticated': bool(self.request.user.is_authenticated),
@@ -45,9 +47,8 @@ class EnergyApiViewSet(GenericViewSet):
             'message': 'Login status retrieved successfully'
         })
 
-    @action(methods=['GET'], url_path="regions", detail=False)
+    @action(methods=['GET'], url_path="regions", detail=False, permission_classes=[AllowAny])
     def get_region_list(self, request, *args, **kwargs):
-        """Список всех регионов"""
         cache_key = 'regions_list'
         regions = cache.get(cache_key)
 
@@ -62,9 +63,30 @@ class EnergyApiViewSet(GenericViewSet):
             'message': 'Regions list retrieved successfully'
         })
 
-    @action(methods=['GET'], url_path='table-data', detail=False)
+    @action(methods=['GET'], url_path='regions-map', detail=False, permission_classes=[AllowAny])
+    def get_regions_map(self, request, *args, **kwargs):
+        """Список регионов для интерактивной карты"""
+        cache_key = 'regions_map_list'
+        regions = cache.get(cache_key)
+        
+        if regions is None:
+            with connection.cursor() as cursor:
+                cursor.execute("""
+                    SELECT *
+                    FROM map_regions
+                    ORDER BY region_name
+                """)
+                columns = [col[0] for col in cursor.description]
+                regions = [dict(zip(columns, row)) for row in cursor.fetchall()]
+                cache.set(cache_key, regions, 3600)
+        
+        return Response({
+            'count': len(regions),
+            'regions': regions
+        })
+
+    @action(methods=['GET'], url_path='table-data', detail=False, permission_classes=[IsAuthenticated])
     def get_table_data(self, request, *args, **kwargs):
-        """Табличные данные с фильтрацией"""
         date_from = request.GET.get('from')
         date_to = request.GET.get('to')
         region = request.GET.get('region')
@@ -72,7 +94,6 @@ class EnergyApiViewSet(GenericViewSet):
         page = int(request.GET.get('page', 1))
         page_size = int(request.GET.get('page_size', 10000))
 
-        """Валидация параметров"""
         if not date_from or not date_to:
             return Response({
                 'status': 'error',
@@ -179,11 +200,10 @@ class EnergyApiViewSet(GenericViewSet):
             'hour': hour
         },
         'message': f'Retrieved {len(data)} records (page {page} of {(total_count + page_size - 1) // page_size})'
-	})
+    })
 
-    @action(methods=['GET'], url_path='summary', detail=False)
+    @action(methods=['GET'], url_path='summary', detail=False, permission_classes=[IsAuthenticated])
     def get_summary_data(self, request, *args, **kwargs):
-        """Сводные данные по объему и ценам"""
         date_from = request.GET.get('from')
         date_to = request.GET.get('to')
         region = request.GET.get('region')
@@ -208,7 +228,6 @@ class EnergyApiViewSet(GenericViewSet):
                 'message': 'Неверный формат даты'
             }, status=status.HTTP_400_BAD_REQUEST)
 
-        """Ключ для кэша"""
         cache_key = f"summary_{date_from}_{date_to}_{region}_{hour}"
         cached_data = cache.get(cache_key)
         
@@ -220,7 +239,6 @@ class EnergyApiViewSet(GenericViewSet):
                 'message': 'Summary data retrieved from cache'
             })
 
-        """Базовый запрос"""
         queryset = ElecReport.objects.filter(
             timestamp__gte=start_date,
             timestamp__lte=end_date
@@ -232,7 +250,6 @@ class EnergyApiViewSet(GenericViewSet):
         if hour:
             queryset = queryset.filter(hour=hour)
 
-        """Агрегация данных"""
         summary_data = queryset.values(
             'timestamp', 'hour'
         ).annotate(
@@ -254,7 +271,6 @@ class EnergyApiViewSet(GenericViewSet):
                 'price': round(data['avg_price'], 2) if data['avg_price'] else None
             })
         
-        """Кэшируем на 5 минут"""
         cache.set(cache_key, result, 300)
         
         return Response({
@@ -270,9 +286,8 @@ class EnergyApiViewSet(GenericViewSet):
             'message': f'Retrieved {len(result)} summary records'
         })
 
-    @action(methods=['GET'], url_path='load-history', detail=False)
+    @action(methods=['GET'], url_path='load-history', detail=False, permission_classes=[IsAuthenticated])
     def get_load_history(self, request, *args, **kwargs):
-        """История загрузки данных"""
         cache_key = 'load_history'
         cached_data = cache.get(cache_key)
         
@@ -289,7 +304,6 @@ class EnergyApiViewSet(GenericViewSet):
         
         response_data = serializer.data
         
-        """Кэшируем на 2 минуты"""
         cache.set(cache_key, response_data, 120)
         
         return Response({
@@ -299,9 +313,8 @@ class EnergyApiViewSet(GenericViewSet):
             'message': f'Retrieved {len(response_data)} history records'
         })
 
-    @action(methods=['GET'], url_path='download-report', detail=False)
+    @action(methods=['GET'], url_path='download-report', detail=False, permission_classes=[IsAuthenticated])
     def download_report(self, request, *args, **kwargs):
-        """Скачать Excel отчет"""
         date_from = request.GET.get('from')
         date_to = request.GET.get('to')
         region = request.GET.get('region')
@@ -313,7 +326,6 @@ class EnergyApiViewSet(GenericViewSet):
                 'message': 'Оба параметра from и to обязательны'
             }, status=status.HTTP_400_BAD_REQUEST)
 
-        """Исправляем формат даты"""
         try:
             if 'T' in date_from:
                 start_date = datetime.fromisoformat(date_from.replace('Z', '+00:00'))
@@ -327,7 +339,6 @@ class EnergyApiViewSet(GenericViewSet):
                 'message': 'Неверный формат даты'
             }, status=status.HTTP_400_BAD_REQUEST)
 
-        """Фильтрация данных с ограничением"""
         queryset = ElecReport.objects.filter(
             timestamp__gte=start_date.date(),
             timestamp__lte=end_date.date()
@@ -339,7 +350,6 @@ class EnergyApiViewSet(GenericViewSet):
         if hour:
             queryset = queryset.filter(timestamp__hour=hour)
 
-        """Подготовка данных для Excel"""
         data = []
         for record in queryset:
             row = {
@@ -363,7 +373,6 @@ class EnergyApiViewSet(GenericViewSet):
             
             data.append(row)
         
-        """Создание Excel файла"""
         if not data:
             return Response({
                 'status': 'error',
@@ -385,3 +394,43 @@ class EnergyApiViewSet(GenericViewSet):
         
         return response
 
+    @action(methods=['GET', 'PUT', 'PATCH'], url_path='profile', detail=False, permission_classes=[IsAuthenticated])
+    def user_profile(self, request, *args, **kwargs):
+        """Получение и обновление расширенного профиля пользователя"""
+        user = request.user
+        profile, created = UserProfile.objects.get_or_create(user=user)
+        
+        if request.method == 'GET':
+            serializer = UserSerializer(user)
+            return Response({
+                'status': 'success',
+                'data': serializer.data
+            })
+        
+        elif request.method in ['PUT', 'PATCH']:
+            profile_serializer = UserProfileSerializer(profile, data=request.data, partial=(request.method == 'PATCH'))
+            
+            if profile_serializer.is_valid():
+                profile_serializer.save()
+                
+                user_serializer = UserSerializer(user)
+                return Response({
+                    'status': 'success',
+                    'data': user_serializer.data,
+                    'message': 'Профиль успешно обновлён'
+                })
+            
+            return Response({
+                'status': 'error',
+                'errors': profile_serializer.errors
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(methods=['GET'], url_path='roles', detail=False, permission_classes=[AllowAny])
+    def get_roles(self, request, *args, **kwargs):
+        """Список доступных ролей"""
+        roles = [
+            {'value': 'student', 'label': 'Студент'},
+            {'value': 'teacher', 'label': 'Преподаватель'},
+            {'value': 'admin', 'label': 'Администратор'},
+        ]
+        return Response({'status': 'success', 'data': roles})

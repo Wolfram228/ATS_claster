@@ -4,6 +4,7 @@ Django settings for energy_project project.
 
 import os
 from pathlib import Path
+from datetime import timedelta
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -22,6 +23,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'rest_framework_simplejwt',
+    'rest_framework_simplejwt.token_blacklist',    
     'rest_framework',
     'corsheaders',
     'energy_api',
@@ -30,15 +33,22 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
 #    'debug_toolbar.middleware.DebugToolbarMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
-    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:8080",
+    "http://localhost:5173",   
+    "http://127.0.0.1:8080",
+    "http://127.0.0.1:5173",
+]
+
 
 INTERNAL_IPS = [
     '127.0.0.1',
@@ -129,12 +139,26 @@ REST_FRAMEWORK = {
     'DEFAULT_THROTTLE_RATES': {
         'anon': '100/hour',
         'user': '1000/hour'
-    }
+    },
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ),
+    'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.AllowAny',
+    )    
 }
 
 # CORS SETTINGS
 CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=30),      
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),         
+    'ROTATE_REFRESH_TOKENS': True,                       
+    'BLACKLIST_AFTER_ROTATION': True,                    
+    'AUTH_HEADER_TYPES': ('Bearer',),
+    'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
+}
 
 # DEBUG TOOLBAR SETTINGS
 #DEBUG_TOOLBAR_CONFIG = {
