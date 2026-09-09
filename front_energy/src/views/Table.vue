@@ -110,7 +110,7 @@
                 <v-data-table-virtual
                 class="my-dtv vertical-lines"
                 :headers="visibleHeaders"
-                :items="paginatedItems"
+                :items="sortedItems"
                 height="740"
                 item-value="date"
                 fixed-header
@@ -203,31 +203,6 @@
                         </div>
                     </template>
                 </v-data-table-virtual>
-                
-                <!-- Отладочная информация -->
-                <v-row class="mt-2">
-                    <v-col cols="12" class="d-flex justify-center">
-                        <span class="text-caption">
-                            Всего записей: {{ filteredItems.length }}, 
-                            На странице: {{ paginatedItems.length }}, 
-                            Страница {{ currentPage }} из {{ totalPages }}
-                        </span>
-                    </v-col>
-                </v-row>
-                
-                <!-- ПАГИНАЦИЯ -->
-                <v-row v-if="totalPages > 1" class="mt-2">
-                    <v-col cols="12" class="d-flex justify-center">
-                        <v-pagination
-                        v-model="currentPage"
-                        :length="totalPages"
-                        :total-visible="7"
-                        color="primary"
-                        @update:modelValue="onPageChange"
-                        ></v-pagination>
-                    </v-col>
-                </v-row>
-                
                 <v-overlay
                     :model-value="loading"
                     contained
@@ -322,12 +297,7 @@ export default {
             //selectedRegion: undefined, - в computed, теперь напрямую по VUex
 
             showTable: false,
-            hintVisible: false,
-
-            currentPage: 1,
-            pageSize: 100,
-            allItems: [],
-            loadedCount: 0
+            hintVisible: false
         }
     },
     methods: {
@@ -343,54 +313,7 @@ export default {
             if (regionChanged) this.selectedRegion = this.selectedRegionBeforeConfirmed
             if (hourChanged) this.selectedHour = this.selectedHourBeforeConfirmed
 
-            this.loadAllData()
-        },
-        async loadAllData() {
-            this.loading = true
-            this.loadedCount = 0
-            
-            try {
-                let allData = []
-                let page = 1
-                const pageSize = 10000
-                let hasMore = true
-
-                while (hasMore) {
-                    const response = await this.$axios.get('/api/table-data/', {
-                        params: {
-                            from: this.$store.state.selectedDateBefore,
-                            to: this.$store.state.selectedDateAfter,
-                            region: this.selectedRegion,
-                            hour: this.selectedHour,
-                            page: page,
-                            page_size: pageSize
-                        }
-                    })
-
-                    const data = response.data
-                    allData = [...allData, ...data.data]
-                    this.loadedCount = allData.length
-                    
-                    hasMore = data.pagination.has_next
-                    page++
-                }
-
-                this.allItems = allData
-                this.currentPage = 1
-                this.showTable = true
-                
-                this.$store.commit('SET_BOATS', allData)
-                
-                // Отладка
-                console.log('Загружено записей:', allData.length)
-                console.log('Всего страниц:', this.totalPages)
-                
-            } catch (error) {
-                console.error('Ошибка загрузки данных:', error)
-            } finally {
-                this.loading = false
-                this.loadedCount = 0
-            }
+            this.$store.dispatch("fetchChangableBoats")
         },
         applyDates() {
             this.$store.commit('SET_SELECTED_DATE_BEFORE', this.draftDateBefore);
@@ -477,7 +400,7 @@ export default {
             }
         },
         async exportToExcel() {
-            const items = this.filteredItems
+            const items = this.sortedItems
             if (!items || !items.length) return
 
             const workbook = new ExcelJS.Workbook()
@@ -686,16 +609,6 @@ export default {
             const day = String(d.getDate()).padStart(2, '0')
             return `${y}-${m}-${day}`
         },
-        onPageChange(page) {
-            this.currentPage = page
-            const tableWrapper = document.querySelector('.dtv-wrap')
-            if (tableWrapper) {
-                tableWrapper.scrollTop = 0
-            }
-        },
-        resetPagination() {
-            this.currentPage = 1
-        }
     },
     computed: {
         ...mapState({
@@ -758,9 +671,7 @@ export default {
             }));
         },
         filteredItems() {
-            if (!this.allItems || !this.allItems.length) return []
-            
-            return this.allItems.filter(item =>
+            return this.virtualBoats.filter(item =>
                 Object.entries(this.filters).every(([key, value]) => {
                 if (!value) return true
 
@@ -797,28 +708,6 @@ export default {
             // всё остальное — как строки
             return String(va).localeCompare(String(vb), 'ru') * dir;
             });
-        },
-        paginatedItems() {
-            const start = (this.currentPage - 1) * this.pageSize
-            const end = start + this.pageSize
-            const result = this.sortedItems.slice(start, end)
-            
-            // Отладка
-            console.log('Пагинация:', {
-                start,
-                end,
-                totalItems: this.sortedItems.length,
-                pageSize: this.pageSize,
-                currentPage: this.currentPage,
-                resultLength: result.length
-            })
-            
-            return result
-        },
-        totalPages() {
-            const total = Math.ceil(this.sortedItems.length / this.pageSize)
-            console.log('totalPages:', total, 'sortedItems.length:', this.sortedItems.length)
-            return total
         },
         // список headers, который пойдёт в саму таблицу (тело)
         visibleHeaders() {
@@ -896,10 +785,6 @@ export default {
 
         this.draftDateAfter = this.$store.state.selectedDateAfter
         this.draftDateBefore = this.$store.state.selectedDateBefore
-
-        if (this.$store.state.boats && this.$store.state.boats.length) {
-            this.allItems = this.$store.state.boats
-        }
     }
 }
 </script>
@@ -976,4 +861,5 @@ export default {
   max-width: 100%;
   overflow-x: auto;          /* скролл по X в контейнере */
 }
+
 </style>
