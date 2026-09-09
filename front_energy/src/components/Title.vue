@@ -4,12 +4,18 @@
             <div class="d-flex align-center">
                 <v-img :src="icon" max-width="45" class="me-2" />
                 <div d-flex flex-column align="left">
-                    <p class="title1"> ATSEnergo </p>
+                    <p class="title1">ATSEnergo</p>
                     <p class="title2">Анализ рынка электроэнергии</p>
                 </div>
                 <a href="/docs/ru/sub-section/overview.html" class="ms-auto mr-3">
                     <v-btn class="doc-link">Документация</v-btn>
                 </a>
+                <router-link to="/lk" class="mr-3">
+                    <v-btn color="primary" variant="outlined" class="profile-btn">
+                        <v-icon left>mdi-account</v-icon>
+                        Личный кабинет
+                    </v-btn>
+                </router-link>
             </div>
         </v-app-bar-title>
     </v-app-bar>
@@ -46,5 +52,9 @@ p {
 }
 a {
     color:rgb(39, 9, 146)
+}
+.profile-btn {
+    border-color: rgb(7, 0, 100);
+    color: rgb(7, 0, 100);
 }
 </style>
