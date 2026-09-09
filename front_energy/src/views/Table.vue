@@ -203,8 +203,21 @@
                         </div>
                     </template>
                 </v-data-table-virtual>
+                
+                <!-- Отладочная информация -->
                 <v-row class="mt-2">
-                    <v-col cols="12" class="d-flex justify-center align-center">
+                    <v-col cols="12" class="d-flex justify-center">
+                        <span class="text-caption">
+                            Всего записей: {{ filteredItems.length }}, 
+                            На странице: {{ paginatedItems.length }}, 
+                            Страница {{ currentPage }} из {{ totalPages }}
+                        </span>
+                    </v-col>
+                </v-row>
+                
+                <!-- ПАГИНАЦИЯ -->
+                <v-row v-if="totalPages > 1" class="mt-2">
+                    <v-col cols="12" class="d-flex justify-center">
                         <v-pagination
                         v-model="currentPage"
                         :length="totalPages"
@@ -214,15 +227,7 @@
                         ></v-pagination>
                     </v-col>
                 </v-row>
-                <v-row>
-                    <v-col cols="12" class="d-flex justify-center">
-                        <span class="text-caption">
-                            Показано {{ (currentPage - 1) * pageSize + 1 }} - 
-                            {{ Math.min(currentPage * pageSize, filteredItems.length) }} 
-                            из {{ filteredItems.length }} записей
-                        </span>
-                    </v-col>
-                </v-row>
+                
                 <v-overlay
                     :model-value="loading"
                     contained
@@ -375,6 +380,10 @@ export default {
                 this.showTable = true
                 
                 this.$store.commit('SET_BOATS', allData)
+                
+                // Отладка
+                console.log('Загружено записей:', allData.length)
+                console.log('Всего страниц:', this.totalPages)
                 
             } catch (error) {
                 console.error('Ошибка загрузки данных:', error)
@@ -792,10 +801,24 @@ export default {
         paginatedItems() {
             const start = (this.currentPage - 1) * this.pageSize
             const end = start + this.pageSize
-            return this.sortedItems.slice(start, end)
+            const result = this.sortedItems.slice(start, end)
+            
+            // Отладка
+            console.log('Пагинация:', {
+                start,
+                end,
+                totalItems: this.sortedItems.length,
+                pageSize: this.pageSize,
+                currentPage: this.currentPage,
+                resultLength: result.length
+            })
+            
+            return result
         },
         totalPages() {
-            return Math.ceil(this.sortedItems.length / this.pageSize)
+            const total = Math.ceil(this.sortedItems.length / this.pageSize)
+            console.log('totalPages:', total, 'sortedItems.length:', this.sortedItems.length)
+            return total
         },
         // список headers, который пойдёт в саму таблицу (тело)
         visibleHeaders() {
