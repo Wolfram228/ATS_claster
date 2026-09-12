@@ -240,6 +240,7 @@
 
 <script>
 import ExcelJS from 'exceljs'
+import { authFetch } from '../utils/auth'
 
 import { mapState, mapActions } from 'vuex'
 
@@ -351,22 +352,32 @@ export default {
                 let hasMore = true
 
                 while (hasMore) {
-                    const response = await this.$axios.get('/api/table-data/', {
-                        params: {
-                            from: this.$store.state.selectedDateBefore,
-                            to: this.$store.state.selectedDateAfter,
-                            region: this.selectedRegion,
-                            hour: this.selectedHour,
-                            page: page,
-                            page_size: pageSize
-                        }
+                    const params = new URLSearchParams({
+                        from: this.$store.state.selectedDateBefore,
+                        to: this.$store.state.selectedDateAfter,
+                        page: page,
+                        page_size: pageSize
                     })
 
-                    const data = response.data
+                    if (this.selectedRegion && this.selectedRegion !== 'Все регионы') {
+                        params.append('region', this.selectedRegion)
+                    }
+
+                    if (this.selectedHour && this.selectedHour !== 'Все часы') {
+                        params.append('hour', this.selectedHour)
+                    }
+
+                    const response = await authFetch(`/api/table-data/?${params.toString()}`)
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`)
+                    }
+
+                    const data = await response.json()
                     allData = [...allData, ...data.data]
                     this.loadedCount = allData.length
                     
-                    hasMore = data.pagination.has_next
+                    hasMore = data.pagination && data.pagination.has_next
                     page++
                 }
 
