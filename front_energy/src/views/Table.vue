@@ -949,4 +949,6 @@ export default {
 
 .table-x {
   max-width: 100%;
-  overflow
+  overflow-x: auto;          /* скролл по X в контейнере */
+}
+</style>
