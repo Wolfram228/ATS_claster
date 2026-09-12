@@ -164,3 +164,27 @@ export async function logout() {
     clearTokens()
   }
 }
+
+export async function checkAuth() {
+  const token = getAccessToken()
+  
+  if (!token) {
+    return false
+  }
+
+  try {
+    const response = await authFetch('/api/auth/profile/')
+    
+    if (!response.ok) {
+      if (response.status === 401) {
+        clearTokens()
+        return false
+      }
+      return false
+    }
+    
+    return true
+  } catch (error) {
+    return false
+  }
+}
