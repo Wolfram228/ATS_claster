@@ -480,7 +480,7 @@ export default {
                 .map(region => ({
                     name: region,
                     type: 'line',
-                    smooth: flase,
+                    smooth: false,
                     data: buckets.map(bucket => {
                         const rows = grouped[region].filter(row => this.getBucketKey(row.timestamp) === bucket)
                         return rows.length ? Number(this.getWeightedPrice(rows).toFixed(2)) : null
