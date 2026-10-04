@@ -163,18 +163,19 @@
             <div class="d-flex align-center justify-end ga-1">
                 <span>{{ column.title }}</span>
                 <HintFormula>
-                    <math xmlns="http://www.w3.org/1998/Math/MathML">
-                        <mfrac>
-                            <mrow>
-                                <mo>∑</mo>
-                                <mi>(цена продажи, руб./МВт·ч × полный план, МВт·ч)</mi>
-                            </mrow>
-                            <mrow>
-                                <mo>∑</mo>
-                                <mi>полный план, МВт·ч</mi>
-                            </mrow>
-                        </mfrac>
-                    </math>
+                    <HintFormula>
+    <div style="display: inline-flex; flex-direction: column; align-items: center; gap: 4px;">
+        <div style="display: flex; align-items: baseline; gap: 8px;">
+            <span style="font-size: 18px; line-height: 1;">∑</span>
+            <span>(цена продажи, руб./МВт·ч × полный план, МВт·ч)</span>
+        </div>
+        <div style="width: 100%; height: 1px; background: #333;"></div>
+        <div style="display: flex; align-items: baseline; gap: 8px;">
+            <span style="font-size: 18px; line-height: 1;">∑</span>
+            <span>полный план, МВт·ч</span>
+        </div>
+    </div>
+</HintFormula>
                 </HintFormula>
             </div>
         </template>
@@ -191,18 +192,19 @@
             <div class="d-flex align-center justify-end ga-1">
                 <span>{{ column.title }}</span>
                 <HintFormula>
-                    <math xmlns="http://www.w3.org/1998/Math/MathML">
-                        <mfrac>
-                            <mrow>
-                                <mo>∑</mo>
-                                <mi>(цена продажи, руб./МВт·ч × полный план, МВт·ч)</mi>
-                            </mrow>
-                            <mrow>
-                                <mo>∑</mo>
-                                <mi>полный план, МВт·ч</mi>
-                            </mrow>
-                        </mfrac>
-                    </math>
+                    <HintFormula>
+    <div style="display: inline-flex; flex-direction: column; align-items: center; gap: 4px;">
+        <div style="display: flex; align-items: baseline; gap: 8px;">
+            <span style="font-size: 18px; line-height: 1;">∑</span>
+            <span>(цена продажи, руб./МВт·ч × полный план, МВт·ч)</span>
+        </div>
+        <div style="width: 100%; height: 1px; background: #333;"></div>
+        <div style="display: flex; align-items: baseline; gap: 8px;">
+            <span style="font-size: 18px; line-height: 1;">∑</span>
+            <span>полный план, МВт·ч</span>
+        </div>
+    </div>
+</HintFormula>
                 </HintFormula>
             </div>
         </template>
