@@ -279,7 +279,7 @@
 </template>
 
 <script>
-import HintFormula from './HintFormula.vue'
+import HintFormula from '../components/HintFormula.vue'
     
 import { mapState, mapGetters, mapActions } from 'vuex'
 
