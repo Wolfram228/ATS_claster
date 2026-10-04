@@ -178,7 +178,7 @@ export default {
                     series.push({
                         name: `${gen.label} ${date}`,
                         type: 'line',
-                        smooth: true,
+                        smooth: false,
                         data,
                     });
                 });
