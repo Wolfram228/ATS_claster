@@ -347,13 +347,13 @@ export default {
             regionHeaders: [
                 { title: 'Регион', key: 'region', align: "end" },
                 { title: 'Федеральный округ', key: 'district', align: "end" },
-                { title: 'Средняя цена продажи, руб./МВт·ч', key: 'avgPrice', align: "end" },
+                { title: 'Средневзвешенная цена продажи, руб./МВт·ч', key: 'avgPrice', align: "end" },
                 { title: 'Суммарный объём выработки, МВт·ч', key: 'volume', align: "end" },
             ],
 
             districtHeaders: [
                 { title: 'Федеральный округ', key: 'district', align: "end" },
-                { title: 'Средняя цена продажи, руб./МВт·ч', key: 'avgPrice', align: "end" },
+                { title: 'Средневзвешенная цена продажи, руб./МВт·ч', key: 'avgPrice', align: "end" },
                 { title: 'Суммарный объём выработки, МВт·ч', key: 'volume', align: "end" },
             ],
         }
@@ -689,4 +689,21 @@ export default {
         }
     }
 }
+        document.addEventListener('DOMContentLoaded', function() {
+        const hintTrigger = document.querySelector('.hint-trigger');
+        const hintContent = document.querySelector('.hint-content');
+        
+        hintTrigger.addEventListener('click', function(e) {
+            e.stopPropagation();
+            hintContent.classList.toggle('show-hint');
+        });
+        
+        document.addEventListener('click', function() {
+            hintContent.classList.remove('show-hint');
+        });
+        
+        hintContent.addEventListener('click', function(e) {
+            e.stopPropagation();
+        });
+    });
 </script>
