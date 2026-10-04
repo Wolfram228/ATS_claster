@@ -152,22 +152,62 @@
                 </v-container>
 
                 <v-container v-else class="px-0">
-                    <v-data-table
-                        v-if="tableView === 'regions'"
-                        :headers="regionHeaders"
-                        :items="regionTableRows"
-                        density="comfortable"
-                        items-per-page="15"
-                    />
+    <v-data-table
+        v-if="tableView === 'regions'"
+        :headers="regionHeaders"
+        :items="regionTableRows"
+        density="comfortable"
+        items-per-page="15"
+    >
+        <template #header.avgPrice="{ column }">
+            <div class="d-flex align-center justify-end ga-1">
+                <span>{{ column.title }}</span>
+                <HintFormula>
+                    <math xmlns="http://www.w3.org/1998/Math/MathML">
+                        <mfrac>
+                            <mrow>
+                                <mo>∑</mo>
+                                <mi>(цена продажи, руб./МВт·ч × полный план, МВт·ч)</mi>
+                            </mrow>
+                            <mrow>
+                                <mo>∑</mo>
+                                <mi>полный план, МВт·ч</mi>
+                            </mrow>
+                        </mfrac>
+                    </math>
+                </HintFormula>
+            </div>
+        </template>
+    </v-data-table>
 
-                    <v-data-table
-                        v-else
-                        :headers="districtHeaders"
-                        :items="districtTableRows"
-                        density="comfortable"
-                        items-per-page="15"
-                    />
-                </v-container>
+    <v-data-table
+        v-else
+        :headers="districtHeaders"
+        :items="districtTableRows"
+        density="comfortable"
+        items-per-page="15"
+    >
+        <template #header.avgPrice="{ column }">
+            <div class="d-flex align-center justify-end ga-1">
+                <span>{{ column.title }}</span>
+                <HintFormula>
+                    <math xmlns="http://www.w3.org/1998/Math/MathML">
+                        <mfrac>
+                            <mrow>
+                                <mo>∑</mo>
+                                <mi>(цена продажи, руб./МВт·ч × полный план, МВт·ч)</mi>
+                            </mrow>
+                            <mrow>
+                                <mo>∑</mo>
+                                <mi>полный план, МВт·ч</mi>
+                            </mrow>
+                        </mfrac>
+                    </math>
+                </HintFormula>
+            </div>
+        </template>
+    </v-data-table>
+</v-container>
             </v-container>
         </v-card>
 
@@ -239,6 +279,8 @@
 </template>
 
 <script>
+import HintFormula from './HintFormula.vue'
+    
 import { mapState, mapGetters, mapActions } from 'vuex'
 
 const DISTRICT_BY_REGION = {
@@ -315,7 +357,9 @@ const DISTRICT_BY_REGION = {
 
 export default {
     name: 'PriceAnalytics',
-
+    components: {
+        HintFormula,
+    },
     data() {
         const { yesterday, today } = this.getInitialRange()
 
@@ -689,21 +733,4 @@ export default {
         }
     }
 }
-        document.addEventListener('DOMContentLoaded', function() {
-        const hintTrigger = document.querySelector('.hint-trigger');
-        const hintContent = document.querySelector('.hint-content');
-        
-        hintTrigger.addEventListener('click', function(e) {
-            e.stopPropagation();
-            hintContent.classList.toggle('show-hint');
-        });
-        
-        document.addEventListener('click', function() {
-            hintContent.classList.remove('show-hint');
-        });
-        
-        hintContent.addEventListener('click', function(e) {
-            e.stopPropagation();
-        });
-    });
 </script>
