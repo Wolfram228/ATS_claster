@@ -11,13 +11,13 @@
         </button>
 
         <transition name="hint-formula-fade">
-            <span
+            <div
                 v-if="visible"
                 class="hint-formula__content"
                 @click.stop
             >
                 <slot />
-            </span>
+            </div>
         </transition>
     </span>
 </template>
@@ -82,18 +82,18 @@ export default {
 }
 
 .hint-formula__content {
+    display: block;
     position: absolute;
     bottom: calc(100% + 10px);
     right: 0;
     z-index: 1000;
-    width: 280px;
+    width: 440px;
     padding: 12px 16px;
     background-color: #fff;
     color: #333;
     border-radius: 8px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     font-size: 13px;
-    line-height: 1.5;
     text-align: center;
     white-space: normal;
     box-sizing: border-box;
