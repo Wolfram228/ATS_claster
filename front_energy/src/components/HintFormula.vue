@@ -1,25 +1,25 @@
 <template>
-    <span class="hint-formula">
-        <button
-            type="button"
-            class="hint-formula__trigger"
-            :aria-expanded="visible"
-            aria-label="Показать формулу"
-            @click.stop="toggle"
-        >
-            ?
-        </button>
-
-        <transition name="hint-formula-fade">
-            <div
-                v-if="visible"
-                class="hint-formula__content"
-                @click.stop
+    <v-menu
+        v-model="visible"
+        :close-on-content-click="false"
+        location="top end"
+        offset="10"
+    >
+        <template #activator="{ props }">
+            <button
+                v-bind="props"
+                type="button"
+                class="hint-formula__trigger"
+                aria-label="Показать формулу"
             >
-                <slot />
-            </div>
-        </transition>
-    </span>
+                ?
+            </button>
+        </template>
+
+        <div class="hint-formula__content">
+            <slot />
+        </div>
+    </v-menu>
 </template>
 
 <script>
@@ -31,34 +31,24 @@ export default {
             visible: false,
         }
     },
-
-    methods: {
-        toggle() {
-            this.visible = !this.visible
-        },
-        close() {
-            this.visible = false
-        },
-    },
-
-    mounted() {
-        document.addEventListener('click', this.close)
-    },
-
-    beforeUnmount() {
-        document.removeEventListener('click', this.close)
-    },
 }
 </script>
 
-<style scoped>
-.hint-formula {
-    position: relative;
-    display: inline-flex;
-    align-items: center;
-    vertical-align: middle;
+<style>
+.hint-formula__content {
+    width: 440px;
+    padding: 12px 16px;
+    background-color: #fff;
+    color: #333;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    font-size: 13px;
+    text-align: center;
+    box-sizing: border-box;
 }
+</style>
 
+<style scoped>
 .hint-formula__trigger {
     display: inline-flex;
     align-items: center;
@@ -79,43 +69,5 @@ export default {
 
 .hint-formula__trigger:hover {
     background-color: #3367d6;
-}
-
-.hint-formula__content {
-    display: block;
-    position: absolute;
-    bottom: calc(100% + 10px);
-    right: 0;
-    z-index: 1000;
-    width: 440px;
-    padding: 12px 16px;
-    background-color: #fff;
-    color: #333;
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    font-size: 13px;
-    text-align: center;
-    white-space: normal;
-    box-sizing: border-box;
-}
-
-.hint-formula__content::after {
-    content: '';
-    position: absolute;
-    top: 100%;
-    right: 6px;
-    border-width: 8px;
-    border-style: solid;
-    border-color: #fff transparent transparent transparent;
-}
-
-.hint-formula-fade-enter-active,
-.hint-formula-fade-leave-active {
-    transition: opacity 0.15s ease, transform 0.15s ease;
-}
-.hint-formula-fade-enter-from,
-.hint-formula-fade-leave-to {
-    opacity: 0;
-    transform: translateY(5px);
 }
 </style>
