@@ -190,7 +190,6 @@
             <div class="d-flex align-center justify-end ga-1">
                 <span>{{ column.title }}</span>
                 <HintFormula>
-                    <HintFormula>
     <div style="display: inline-flex; flex-direction: column; align-items: center; gap: 4px;">
         <div style="display: flex; align-items: baseline; gap: 8px;">
             <span style="font-size: 18px; line-height: 1;">∑</span>
@@ -202,7 +201,6 @@
             <span>полный план, МВт·ч</span>
         </div>
     </div>
-</HintFormula>
                 </HintFormula>
             </div>
         </template>
