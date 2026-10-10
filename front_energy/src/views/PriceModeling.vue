@@ -155,17 +155,66 @@
         Расчёт выполнен по фактическим данным для выбранного региона.
       </div>
 
-      <v-table class="mt-4 data-table-clean">
+      <div class="section-subtitle" align="left">
+        Регион: {{ appliedRegion }} · Период: {{ formatDisplayDate(appliedDateFrom) }} — {{ formatDisplayDate(appliedDateTo) }}
+      </div>
+
+      <v-table class="mt-4 data-table-clean describe-table">
+        <thead>
+          <tr>
+            <th>Показатель</th>
+            <th v-for="variable in statistics.variables" :key="variable.key">{{ variable.label }}</th>
+          </tr>
+        </thead>
         <tbody>
-          <tr><td>Регион</td><td>{{ selectedRegion }}</td></tr>
-          <tr><td>Количество наблюдений</td><td>{{ statistics.count }}</td></tr>
-          <tr><td>Средняя цена продажи</td><td>{{ formatNumber(statistics.avgPrice) }} руб./МВт·ч</td></tr>
-          <tr><td>Минимальная цена продажи</td><td>{{ formatNumber(statistics.minPrice) }} руб./МВт·ч</td></tr>
-          <tr><td>Максимальная цена продажи</td><td>{{ formatNumber(statistics.maxPrice) }} руб./МВт·ч</td></tr>
-          <tr><td>Стандартное отклонение цены</td><td>{{ formatNumber(statistics.stdPrice) }} руб./МВт·ч</td></tr>
-          <tr><td>Средний объём</td><td>{{ formatNumber(statistics.avgVolume) }} МВт·ч</td></tr>
-          <tr><td>Суммарный объём</td><td>{{ formatNumber(statistics.totalVolume) }} МВт·ч</td></tr>
-          <tr><td>Средняя температура</td><td>{{ formatNumber(statistics.avgTemperature) }} °C</td></tr>
+          <tr>
+            <td>Количество наблюдений</td>
+            <td v-for="variable in statistics.variables" :key="variable.key">{{ formatDescribeValue(variable.n, 0) }}</td>
+          </tr>
+          <tr>
+            <td>Среднее значение</td>
+            <td v-for="variable in statistics.variables" :key="variable.key">{{ formatDescribeValue(variable.mean, 2) }}</td>
+          </tr>
+          <tr>
+            <td>Стандартное отклонение</td>
+            <td v-for="variable in statistics.variables" :key="variable.key">{{ formatDescribeValue(variable.sd, 2) }}</td>
+          </tr>
+          <tr>
+            <td>Медиана</td>
+            <td v-for="variable in statistics.variables" :key="variable.key">{{ formatDescribeValue(variable.median, 2) }}</td>
+          </tr>
+          <tr>
+            <td>Усечённое среднее (10 %)</td>
+            <td v-for="variable in statistics.variables" :key="variable.key">{{ formatDescribeValue(variable.trimmed, 2) }}</td>
+          </tr>
+          <tr>
+            <td>Медианное абсолютное отклонение</td>
+            <td v-for="variable in statistics.variables" :key="variable.key">{{ formatDescribeValue(variable.mad, 2) }}</td>
+          </tr>
+          <tr>
+            <td>Минимум</td>
+            <td v-for="variable in statistics.variables" :key="variable.key">{{ formatDescribeValue(variable.min, 2) }}</td>
+          </tr>
+          <tr>
+            <td>Максимум</td>
+            <td v-for="variable in statistics.variables" :key="variable.key">{{ formatDescribeValue(variable.max, 2) }}</td>
+          </tr>
+          <tr>
+            <td>Размах (max − min)</td>
+            <td v-for="variable in statistics.variables" :key="variable.key">{{ formatDescribeValue(variable.range, 2) }}</td>
+          </tr>
+          <tr>
+            <td>Асимметрия</td>
+            <td v-for="variable in statistics.variables" :key="variable.key">{{ formatDescribeValue(variable.skew, 3) }}</td>
+          </tr>
+          <tr>
+            <td>Эксцесс</td>
+            <td v-for="variable in statistics.variables" :key="variable.key">{{ formatDescribeValue(variable.kurtosis, 3) }}</td>
+          </tr>
+          <tr>
+            <td>Стандартная ошибка среднего</td>
+            <td v-for="variable in statistics.variables" :key="variable.key">{{ formatDescribeValue(variable.se, 2) }}</td>
+          </tr>
         </tbody>
       </v-table>
     </v-card>
@@ -381,20 +430,20 @@ export default {
       appliedDateTo: '',
       appliedRegion: '',
       selectedRegion: 'Иркутская область',
-      targetVariable: 'Price / price_sell - цена продажи электроэнергии',
-      targetVariables: ['Price / price_sell - цена продажи электроэнергии'],
+      targetVariable: 'Цена продажи электроэнергии',
+      targetVariables: ['Цена продажи электроэнергии'],
       factors: [
-        { label: 'Объём / full_plan', value: 'full_plan' },
+        { label: 'Объём', value: 'full_plan' },
         { label: 'Цена предыдущего часа', value: 'previousPrice' },
         { label: 'Циклический час суток', value: 'hourCycle' },
         { label: 'Циклический день недели', value: 'dayCycle' },
-        { label: 'Месяц / дамми-переменные', value: 'monthDummy' },
-        { label: 'Температура / temperature', value: 'temperature' },
-        { label: 'Выработка ГЭС / HPP', value: 'HPP' },
-        { label: 'Выработка ТЭС / CHP или NPP', value: 'CHP' },
-        { label: 'Потребление / Q_cons', value: 'Q_cons' },
-        { label: 'Экспорт / Q_exp', value: 'Q_exp' },
-        { label: 'Импорт / Q_imp', value: 'Q_imp' },
+        { label: 'Месяц', value: 'monthDummy' },
+        { label: 'Температура', value: 'temperature' },
+        { label: 'Выработка ГЭС', value: 'HPP' },
+        { label: 'Выработка ТЭС', value: 'CHP' },
+        { label: 'Потребление', value: 'Q_cons' },
+        { label: 'Экспорт', value: 'Q_exp' },
+        { label: 'Импорт', value: 'Q_imp' },
       ],
       selectedFactors: ['full_plan', 'previousPrice', 'hourCycle', 'dayCycle', 'monthDummy', 'temperature'],
       hourlyForecastHeaders: [
@@ -586,24 +635,55 @@ export default {
         return
       }
 
-      const prices = rows.map(row => this.getPrice(row)).filter(value => Number.isFinite(value))
-      const volumes = rows.map(row => this.getVolume(row)).filter(value => Number.isFinite(value))
-      const temperatures = rows.map(row => this.toNumber(row.temperature)).filter(value => Number.isFinite(value))
+      const priceValues = rows.map(r => this.getPrice(r)).filter(Number.isFinite)
+      const volumeValues = rows.map(r => this.getVolume(r)).filter(Number.isFinite)
+      const temperatureValues = rows.map(r => this.toNumber(r.temperature)).filter(Number.isFinite)
 
       this.statistics = {
-        count: prices.length,
-        avgPrice: this.mean(prices),
-        minPrice: Math.min(...prices),
-        maxPrice: Math.max(...prices),
-        stdPrice: this.std(prices),
-        avgVolume: this.mean(volumes),
-        totalVolume: this.sum(volumes),
-        avgTemperature: temperatures.length ? this.mean(temperatures) : NaN,
+        variables: [
+          this.describeVariable('price_sell', 'Цена продажи', priceValues),
+          this.describeVariable('full_plan', 'Объём', volumeValues),
+          this.describeVariable('temperature', 'Температура', temperatureValues),
+        ],
       }
 
       this.buildCorrelationAnalysis(rows)
     },
 
+    describeVariable(key, label, values) {
+      const finite = values.filter(v => Number.isFinite(v))
+      if (finite.length < 2) {
+        return {
+          key, label,
+          n: finite.length,
+          mean: NaN, sd: NaN, median: NaN, trimmed: NaN, mad: NaN,
+          min: NaN, max: NaN, range: NaN,
+          skew: NaN, kurtosis: NaN, se: NaN,
+        }
+      }
+
+      const min = Math.min(...finite)
+      const max = Math.max(...finite)
+      const m = this.mean(finite)
+      const s2 = this.sum(finite.map(v => (v - m) ** 2)) / (finite.length - 1)
+      const sd = Math.sqrt(s2)
+
+      return {
+        key, label,
+        n: finite.length,
+        mean: m,
+        sd,
+        median: this.median(finite),
+        trimmed: this.trimmedMean(finite, 0.1),
+        mad: this.medianAbsoluteDeviation(finite),
+        min, max,
+        range: max - min,
+        skew: this.skewness(finite),
+        kurtosis: this.kurtosis(finite),
+        se: sd / Math.sqrt(finite.length),
+      }
+    },
+    
     buildCorrelationAnalysis(rows) {
       const rowsWithLag = rows.map((row, index) => {
         const previousRow = index > 0 ? rows[index - 1] : null
@@ -938,7 +1018,7 @@ export default {
 
     getFactorLabel(value) {
       const labels = {
-        full_plan: 'Объём / full_plan',
+        full_plan: 'Объём',
         previousPrice: 'Цена предыдущего часа',
         hourCycle: 'Циклический час суток',
         hourSin: 'Час суток sin',
@@ -946,7 +1026,7 @@ export default {
         dayCycle: 'Циклический день недели',
         daySin: 'День недели sin',
         dayCos: 'День недели cos',
-        monthDummy: 'Месяц / дамми-переменные',
+        monthDummy: 'Месяц',
         month_2: 'Февраль',
         month_3: 'Март',
         month_4: 'Апрель',
@@ -958,12 +1038,12 @@ export default {
         month_10: 'Октябрь',
         month_11: 'Ноябрь',
         month_12: 'Декабрь',
-        temperature: 'Температура / temperature',
-        HPP: 'Выработка ГЭС / HPP',
-        CHP: 'Выработка ТЭС / CHP или NPP',
-        Q_cons: 'Потребление / Q_cons',
-        Q_exp: 'Экспорт / Q_exp',
-        Q_imp: 'Импорт / Q_imp',
+        temperature: 'Температура',
+        HPP: 'Выработка ГЭС',
+        CHP: 'Выработка ТЭС',
+        Q_cons: 'Потребление',
+        Q_exp: 'Экспорт',
+        Q_imp: 'Импорт',
       }
       return labels[value] || value
     },
@@ -997,6 +1077,63 @@ export default {
       const avg = this.mean(values)
       const variance = this.mean(values.map(value => Math.pow(value - avg, 2)))
       return Math.sqrt(variance)
+    },
+    
+    median(values) {
+      const sorted = [...values].sort((a, b) => a - b)
+      const n = sorted.length
+      if (!n) return NaN
+      const mid = Math.floor(n / 2)
+      if (n % 2 === 0) return (sorted[mid - 1] + sorted[mid]) / 2
+      return sorted[mid]
+    },
+
+    trimmedMean(values, trim = 0.1) {
+      const n = values.length
+      const sorted = [...values].sort((a, b) => a - b)
+      const k = Math.floor(n * trim)
+      const sliced = sorted.slice(k, n - k)
+      return this.mean(sliced)
+    },
+
+    medianAbsoluteDeviation(values) {
+      const med = this.median(values)
+      const deviations = values.map(v => Math.abs(v - med))
+      return this.median(deviations) * 1.4826
+    },
+
+    skewness(values) {
+      const n = values.length
+      if (n < 3) return NaN
+      const m = this.mean(values)
+      const s2 = this.sum(values.map(x => (x - m) ** 2)) / (n - 1)
+      const s = Math.sqrt(s2)
+      const g1 = this.sum(values.map(x => ((x - m) / s) ** 3)) / n
+      return Math.sqrt(n * (n - 1)) / (n - 2) * g1
+    },
+
+    kurtosis(values) {
+      const n = values.length
+      if (n < 4) return NaN
+      const m = this.mean(values)
+      const s2 = this.sum(values.map(x => (x - m) ** 2)) / (n - 1)
+      const s = Math.sqrt(s2)
+      const term = this.sum(values.map(x => ((x - m) / s) ** 4))
+      return n * (n + 1) / ((n - 1) * (n - 2) * (n - 3)) * term
+        - 3 * (n - 1) ** 2 / ((n - 2) * (n - 3))
+    },
+
+    standardError(values) {
+      const n = values.length
+      if (n < 2) return NaN
+      return this.std(values) / Math.sqrt(n)
+    },
+
+    formatDisplayDate(iso) {
+      if (!iso) return ''
+      const match = String(iso).match(/^(\d{4})-(\d{2})-(\d{2})/)
+      if (!match) return ''
+      return `${match[3]}.${match[2]}.${match[1]}`
     },
 
     dot(a, b) {
@@ -1054,6 +1191,15 @@ export default {
 
     formatNumber(value, digits = 2) {
       if (!Number.isFinite(Number(value))) return '0'
+      return Number(value).toLocaleString('ru-RU', {
+        minimumFractionDigits: digits,
+        maximumFractionDigits: digits,
+      })
+    },
+    
+    formatDescribeValue(value, digits) {
+      if (!Number.isFinite(Number(value))) return '—'
+      if (digits === 0) return String(Math.round(Number(value)))
       return Number(value).toLocaleString('ru-RU', {
         minimumFractionDigits: digits,
         maximumFractionDigits: digits,
@@ -1165,6 +1311,22 @@ export default {
 
 .data-table-clean td {
   padding: 12px 18px;
+}
+.describe-table th,
+.describe-table td {
+  padding: 10px 12px;
+  white-space: nowrap;
+}
+
+.describe-table th:first-child,
+.describe-table td:first-child {
+  width: auto;
+  text-align: left;
+}
+
+.describe-table th:not(:first-child),
+.describe-table td:not(:first-child) {
+  text-align: right;
 }
 
 :deep(.v-field) {
