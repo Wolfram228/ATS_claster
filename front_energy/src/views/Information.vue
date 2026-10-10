@@ -103,7 +103,7 @@
                                 <v-menu location="top" class="flex-grow-1 me-3">
                                     <template v-slot:activator="{ props }">
                                         <!-- <v-btn color="blue-grey-lighten-5" v-bind="props" min-height="55px" block> {{ selectedRegion }} </v-btn> -->
-                                        <v-btn color="blue-grey-lighten-5" v-bind="props" min-height="55px" block> {{ selectedRegionBeforeConfirmed || "Выбор региона" }} </v-btn>
+                                        <v-btn color="blue-grey-lighten-5" v-bind="props" min-height="55px" block class="region-btn"> {{ selectedRegionBeforeConfirmed || "Выбор региона" }} </v-btn>
                                     </template>
 
                                     <v-list style="max-height: 300px">
@@ -147,7 +147,7 @@
                             </v-col>
                         </v-row>
                     </v-container>
-                    <v-container v-if="loading===true">
+                    <v-container v-if="loading===">
                         Загрузка данных...
                     </v-container>
                     <v-container v-else>
@@ -284,29 +284,29 @@ export default {
             const from = this.draftDateBefore
             const to = this.draftDateAfter
 
-            if (!from || !to) return true
+            if (!from || !to) return 
 
             // строгая проверка формата (и реальной даты)
             const fromYmd = this.ymdLocal(from)
             const toYmd = this.ymdLocal(to)
-            if (!fromYmd || !toYmd) return true
+            if (!fromYmd || !toYmd) return 
 
             const today = this.ymdLocal(new Date())
-            if (!today) return true
+            if (!today) return 
 
             const d = new Date()
             d.setFullYear(d.getFullYear() - 3)
             const minDate = this.ymdLocal(d)
-            if (!minDate) return true
+            if (!minDate) return 
 
             // "от" не может быть завтра или позже
-            if (fromYmd > today) return true
+            if (fromYmd > today) return 
 
             // "от" не старше 3 лет назад
-            if (fromYmd < minDate) return true
+            if (fromYmd < minDate) return 
 
             // диапазон
-            if (fromYmd > toYmd) return true
+            if (fromYmd > toYmd) return 
 
             return false
         },
@@ -481,7 +481,7 @@ export default {
             return generatorFields.map(({ key, label }) => ({
                 name: label,
                 type: 'line',
-                smooth: true,
+                smooth: false,
                 data: sums[key],
             }))
         },
@@ -580,13 +580,13 @@ export default {
                     {
                         name: "Цена покупки",
                         type: "line",
-                        smooth: true,
+                        smooth: false,
                         data: this.hourlyStats.map(d => d.priceBuy),
                     },
                     {
                         name: "Цена продажи",
                         type: "line",
-                        smooth: true,
+                        smooth: false,
                         data: this.hourlyStats.map(d => d.priceSell),
                     },
                 ],
@@ -607,14 +607,14 @@ export default {
                 {
                     name: 'Цена покупки',
                     type: 'line',
-                    smooth: true,
+                    smooth: false,
                     data: this.hourlyStats.map(d => d.priceBuy),
                     yAxisIndex: 1,
                 },
                 {
                     name: 'Цена продажи',
                     type: 'line',
-                    smooth: true,
+                    smooth: false,
                     data: this.hourlyStats.map(d => d.priceSell),
                     yAxisIndex: 1,
                 },
@@ -821,3 +821,13 @@ export default {
     },
 }
 </script>
+
+<style scoped>
+.region-btn :deep(.v-btn__content) {
+    white-space: normal;
+    line-height: 1.15;
+    word-break: break-word;
+    text-align: center;
+    padding: 4px 8px;
+}
+</style>
