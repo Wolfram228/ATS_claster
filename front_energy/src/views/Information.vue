@@ -813,6 +813,9 @@ export default {
         const regionActive = this.selectedRegion && this.selectedRegion !== 'Все регионы';
         if (!regionActive) this.selectedRegion = this.regions[0]?.value;;
 
+        if (!this.selectedRegionPrevBeforeConfirmed) {
+        this.selectedRegionPrevBeforeConfirmed = this.$store.state.selectedRegionBeforeConfirmed
+        }
         //this.selectedRegionPrev = this.regionsPrev[0]?.value;
 
         this.draftDateAfter = this.$store.state.selectedDateAfter
