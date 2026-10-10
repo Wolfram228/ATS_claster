@@ -21,7 +21,7 @@
                 <v-menu location="bottom">
                     <template v-slot:activator="{ props }">
                         <!-- <v-btn color="blue-grey-lighten-5" v-bind="props" min-height="55px" block> {{ filters.region || regions[0].value }} </v-btn> -->
-                        <v-btn color="blue-grey-lighten-5" v-bind="props" min-height="55px" block> {{ selectedRegionBeforeConfirmed || "Выбор региона" }} </v-btn>
+                        <v-btn color="blue-grey-lighten-5" v-bind="props" min-height="55px" block class="region-btn"> {{ selectedRegionBeforeConfirmed || "Выбор региона" }} </v-btn>
                     </template>
 
                     <v-list style="max-height: 300px">
@@ -891,6 +891,15 @@ export default {
 </script>
 
 <style scoped>
+
+.region-btn :deep(.v-btn__content) {
+    white-space: normal;
+    line-height: 1.15;
+    word-break: break-word;
+    text-align: center;
+    padding: 4px 8px;
+}
+    
 .dtv-wrap {
   position: relative;
 }
