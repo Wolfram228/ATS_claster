@@ -147,7 +147,7 @@
                             </v-col>
                         </v-row>
                     </v-container>
-                    <v-container v-if="loading===">
+                    <v-container v-if="loading">
                         Загрузка данных...
                     </v-container>
                     <v-container v-else>
