@@ -18,30 +18,23 @@
 
       <!-- ПРАВАЯ КОЛОНКА: диаграммы -->
       <v-col cols="12" md="5" class="charts-col">
-        <v-card v-if="!inited" class="pa-4" variant="outlined" rounded="lg">
-          <v-card-text>Загрузка данных для графиков...</v-card-text>
-        </v-card>
+        <div v-if="!inited" class="chart-placeholder">
+          Загрузка данных для графиков...
+        </div>
 
         <template v-else>
-          <v-card v-if="!selectedRegion" class="pa-4" variant="outlined" rounded="lg">
-            <v-card-text class="text-center text-grey-darken-1">
-              Выберите регион на карте, чтобы увидеть диаграммы
-            </v-card-text>
-          </v-card>
+          <div v-if="!selectedRegion" class="chart-placeholder">
+            Выберите регион на карте, чтобы увидеть диаграммы
+          </div>
 
           <template v-else>
-            <v-card variant="outlined" rounded="lg" class="pa-2">
-              <VChart :option="pieOptions" style="width: 100%; height: 340px;" />
-            </v-card>
+            <div class="chart-box">
+              <VChart :option="pieOptions" autoresize class="chart-fill" />
+            </div>
 
-            <v-card
-              v-if="!prevDayLoading"
-              variant="outlined"
-              rounded="lg"
-              class="pa-2"
-            >
-              <VChart :option="pieOptionsPrev" style="width: 100%; height: 340px;" />
-            </v-card>
+            <div v-if="!prevDayLoading" class="chart-box">
+              <VChart :option="pieOptionsPrev" autoresize class="chart-fill" />
+            </div>
           </template>
         </template>
       </v-col>
@@ -226,19 +219,24 @@ export default {
 
 <style scoped>
 .map-page {
-  min-height: 100vh;
+  height: 100vh;
   display: flex;
   flex-direction: column;
   background: #f4f6f9;
+  overflow: hidden;
 }
 
-/* Левая колонка — карта */
+/* Карта и диаграммы — одной высоты (вычитаем app-bar) */
+.map-col,
+.charts-col {
+  height: calc(100vh - 64px);
+}
+
 .map-col {
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 70vh;
   background: #eef3f8;
   border-right: 1px solid rgba(0, 0, 0, 0.06);
 }
@@ -250,11 +248,12 @@ export default {
   justify-content: center;
   align-items: center;
   padding: 16px;
+  box-sizing: border-box;
 }
 
 .map-wrapper svg {
   max-width: 95%;
-  max-height: 82vh;
+  max-height: 95%;
 }
 
 .region-info {
@@ -265,14 +264,57 @@ export default {
   background: white;
 }
 
-/* Правая колонка — диаграммы */
+/* Правая колонка — диаграммы столбиком, делят высоту пополам */
 .charts-col {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 12px;
-  max-height: 100vh;
-  overflow-y: auto;
+  padding: 8px;
+  gap: 8px;
   background: #fafbfc;
+  box-sizing: border-box;
+}
+
+.chart-box {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.chart-fill {
+  width: 100%;
+  height: 100%;
+}
+
+.chart-placeholder {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6b7280;
+  font-size: 14px;
+  text-align: center;
+  padding: 16px;
+}
+
+/* На узких экранах — не фиксируем высоту, даём развернуться по содержимому */
+@media (max-width: 959px) {
+  .map-page {
+    height: auto;
+    overflow: visible;
+  }
+
+  .map-col,
+  .charts-col {
+    height: auto;
+  }
+
+  .map-col {
+    min-height: 60vh;
+  }
+
+  .chart-box {
+    flex: none;
+    height: 320px;
+  }
 }
 </style>
