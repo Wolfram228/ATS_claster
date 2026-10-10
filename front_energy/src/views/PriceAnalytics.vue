@@ -14,7 +14,7 @@
 
             <v-container class="px-0 pt-6">
                 <v-row>
-                    <v-col cols="12" md="3">
+                    <v-col cols="12" md="2">
                         <v-text-field
                             v-model="dateFrom"
                             label="Дата с"
@@ -23,7 +23,7 @@
                         />
                     </v-col>
 
-                    <v-col cols="12" md="3">
+                    <v-col cols="12" md="2">
                         <v-text-field
                             v-model="dateTo"
                             label="Дата по"
@@ -43,7 +43,18 @@
                         />
                     </v-col>
 
-                    <v-col cols="12" md="4">
+                    <v-col cols="12" md="3">
+                        <v-select
+                            v-model="zone"
+                            :items="zoneItems"
+                            item-title="title"
+                            item-value="value"
+                            label="Зона суток"
+                            hide-details
+                        />
+                    </v-col>
+
+                    <v-col cols="12" md="3">
                         <v-btn
                             color="blue-grey-lighten-1"
                             min-height="55px"
@@ -377,6 +388,15 @@ export default {
                 { title: 'Месяц', value: 'month' },
             ],
 
+            zone: 'all',
+            appliedZone: 'all',
+            zoneItems: [
+                { title: 'Все часы',                     value: 'all' },
+                { title: 'Ночные (23–7)',                value: 'night' },
+                { title: 'Полупиковые (10–17, 21–23)',   value: 'semipeak' },
+                { title: 'Пиковые (7–10, 17–21)',        value: 'peak' },
+            ],
+            
             selectedDistrictsDraft: ['Сибирский ФО'],
             selectedRegionsDraft: ['Иркутская область'],
 
@@ -447,6 +467,7 @@ export default {
                 this.dateFrom !== this.appliedDateFrom ||
                 this.dateTo !== this.appliedDateTo ||
                 this.aggregation !== this.appliedAggregation ||
+                this.zone !== this.appliedZone || 
                 JSON.stringify([...this.selectedDistrictsDraft].sort()) !== JSON.stringify([...this.appliedDistricts].sort()) ||
                 JSON.stringify([...this.selectedRegionsDraft].sort()) !== JSON.stringify([...this.appliedRegions].sort())
             )
@@ -466,19 +487,22 @@ export default {
         filteredRowsByDistricts() {
             return this.priceAnalyticsRows.filter(row => {
                 const district = this.getDistrict(row.region || '')
-                return !this.appliedDistricts.length || this.appliedDistricts.includes(district)
+                const districtOk = !this.appliedDistricts.length || this.appliedDistricts.includes(district)
+                const zoneOk = this.matchesZone(row)       // ← добавить
+                return districtOk && zoneOk
             })
         },
-
+        
         filteredRowsByRegions() {
             return this.priceAnalyticsRows.filter(row => {
                 const region = row.region || ''
                 const district = this.getDistrict(region)
-
+        
                 const districtOk = !this.appliedDistricts.length || this.appliedDistricts.includes(district)
                 const regionOk = !this.appliedRegions.length || this.appliedRegions.includes(region)
-
-                return districtOk && regionOk
+                const zoneOk = this.matchesZone(row)       // ← добавить
+        
+                return districtOk && regionOk && zoneOk
             })
         },
 
@@ -603,7 +627,34 @@ export default {
 
     methods: {
         ...mapActions(['fetchPriceAnalyticsRows']),
-
+         getHour(row) {
+            if (row.hour !== undefined && row.hour !== null && row.hour !== '') {
+                const h = Number(row.hour)
+                if (Number.isFinite(h)) return h
+            }
+            if (!row.timestamp) return null
+            const date = new Date(row.timestamp)
+            if (Number.isNaN(date.getTime())) return null
+            return date.getHours()
+        },
+    
+        matchesZone(row) {
+            if (this.appliedZone === 'all') return true
+    
+            const hour = this.getHour(row)
+            if (hour === null) return false
+    
+            if (this.appliedZone === 'night') {
+                return hour >= 23 || hour < 7
+            }
+            if (this.appliedZone === 'peak') {
+                return (hour >= 7 && hour < 10) || (hour >= 17 && hour < 21)
+            }
+            if (this.appliedZone === 'semipeak') {
+                return (hour >= 10 && hour < 17) || (hour >= 21 && hour < 23)
+            }
+            return true
+        },
         getInitialRange() {
             const today = new Date()
             const yesterday = new Date()
@@ -635,6 +686,7 @@ export default {
             this.appliedDateFrom = this.dateFrom
             this.appliedDateTo = this.dateTo
             this.appliedAggregation = this.aggregation
+            this.appliedZone = this.zone   
             this.appliedDistricts = [...this.selectedDistrictsDraft]
             this.appliedRegions = [...this.selectedRegionsDraft]
 
