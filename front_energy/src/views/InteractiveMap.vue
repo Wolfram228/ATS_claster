@@ -73,13 +73,24 @@ export default {
     }),
 
     selectedRegion: {
-      get() {
-        return this.$store.state.selectedRegionBeforeConfirmed
-      },
-      set(region) {
-        this.$store.commit('SET_SELECTED_REGION_BEFORE_CONFIRMED', region)
-        this.highlightRegion(region)
-      },
+        get() {
+          return this.$store.state.selectedRegionBeforeConfirmed
+        },
+        set(region) {
+          // 1) регион для страницы «Информация» и других мест
+          this.$store.commit('SET_SELECTED_REGION_BEFORE_CONFIRMED', region)
+      
+          // 2) регион для InfoCard и диаграмм «за прошлые/текущие сутки»
+          this.$store.commit('SET_SELECTED_REGION_PREV', region)
+      
+          // 3) перезагружаем данные именно по этому региону
+          this.$store.dispatch('fetchLastDayBoats')
+          this.$store.dispatch('fetchPrevDayBoats')
+      
+          // 4) подсветка карты
+          this.highlightRegion(region)
+  },
+
     },
 
     // отфильтрованные данные для текущих суток
