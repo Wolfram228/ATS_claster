@@ -30,7 +30,7 @@
 </template>
 
 <script>
-import icon from "../assets/icon.png"
+import icon from "../assets/logo.png"
 export default {
     data() {
         return { icon }
