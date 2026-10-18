@@ -1,27 +1,16 @@
 <template>
     <v-app-bar app>
-        <v-container fluid>
+        <v-container>
             <v-row justify="center" align="center" class="nav-row" dense>
-                <div v-for="link in links" class="nav-link">
-                    <router-link :to=link.to>
-                        <v-btn class="nav-btn"> {{ link.name }}</v-btn>
+                <div
+                    v-for="link in links"
+                    :key="link.to"
+                    class="nav-link"
+                >
+                    <router-link :to="link.to">
+                        <v-btn class="nav-btn">{{ link.name }}</v-btn>
                     </router-link>
                 </div>
-
-                    <!--
-                    <router-link to="/">
-                        <v-btn> Главная </v-btn>
-                    </router-link>
-                    <router-link to="/reports">
-                        <v-btn> Отчёты </v-btn>
-                    </router-link>
-                    <router-link to="/reportInfo/1">
-                        <v-btn> Информация </v-btn>
-                    </router-link>
-                    <router-link to="/table">
-                        <v-btn> Таблица </v-btn>
-                    </router-link>
-                    -->
             </v-row>
         </v-container>
     </v-app-bar>
