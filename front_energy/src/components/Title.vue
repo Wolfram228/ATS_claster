@@ -6,7 +6,7 @@
                 <div class="d-flex align-center">
                     <v-img :src="icon" max-width="45" class="me-2" />
                     <div class="d-flex flex-column" align="left">
-                        <p class="title1">ATSEnergo</p>
+                        <p class="title1">ТокАналитика</p>
                         <p class="title2">Анализ рынка электроэнергии</p>
                     </div>
                 </div>
