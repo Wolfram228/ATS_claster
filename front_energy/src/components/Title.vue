@@ -4,7 +4,7 @@
             <div class="d-flex align-center w-100">
                 <!-- слева: логотип и название -->
                 <div class="d-flex align-center">
-                    <v-img :src="icon" width="45" height="45" class="me-2" />
+                    <v-img :src="icon" width="100" height="100" class="me-2" />
                     <div class="d-flex flex-column" align="left">
                         <p class="title1">ТокАналитика</p>
                         <p class="title2">Анализ рынка электроэнергии</p>
