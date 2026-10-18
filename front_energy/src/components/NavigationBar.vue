@@ -1,5 +1,5 @@
 <template>
-    <v-app-bar app>
+    <v-app-bar app flat class="app-bar-clean">
         <v-container>
             <v-row justify="center" align="center" class="nav-row" dense>
                 <div
@@ -34,27 +34,32 @@ export default {
 </script>
 
 <style scoped>
+.app-bar-clean {
+    box-shadow: none !important;
+    border-bottom: none !important;
+}
+
 .router-link-active {
     color: rgb(6, 4, 119);
 }
 
 .nav-row {
-  display: flex;
-  flex-wrap: nowrap; /* запрет переноса */
-  justify-content: center; /* по центру экрана */
+    display: flex;
+    flex-wrap: nowrap;
+    justify-content: center;
 }
 
 .nav-link {
-  flex-shrink: 1;       /* позволяет кнопке сжиматься */
-  min-width: 80px;      /* минимальная ширина кнопки */
+    flex-shrink: 1;
+    min-width: 80px;
 }
 
 .nav-btn {
-  white-space: nowrap;    /* текст в одну строку */
-  padding-left: 8px;      /* уменьшаем внутренние отступы для маленьких экранов */
-  padding-right: 8px;
-  font-size: 14px;        /* можно уменьшать на мобильных через медиазапросы */
-  width: 100%;
-  box-sizing: border-box;
+    white-space: nowrap;
+    padding-left: 8px;
+    padding-right: 8px;
+    font-size: 14px;
+    width: 100%;
+    box-sizing: border-box;
 }
 </style>
