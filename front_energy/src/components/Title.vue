@@ -1,5 +1,5 @@
 <template>
-    <v-app-bar app>
+    <v-app-bar app flat class="app-bar-clean">
         <v-container>
             <div class="d-flex align-center w-100">
                 <!-- слева: логотип и название -->
@@ -11,10 +11,8 @@
                     </div>
                 </div>
 
-                <!-- распорка — разводит левую и правую части по краям -->
                 <v-spacer />
 
-                <!-- справа: документация и личный кабинет -->
                 <a href="/docs/ru/sub-section/overview.html" class="me-3">
                     <v-btn class="doc-link">Документация</v-btn>
                 </a>
@@ -39,6 +37,11 @@ export default {
 </script>
 
 <style scoped>
+.app-bar-clean {
+    box-shadow: none !important;
+    border-bottom: none !important;
+}
+
 .title1 {
     margin: 0;
     font-weight: bold;
