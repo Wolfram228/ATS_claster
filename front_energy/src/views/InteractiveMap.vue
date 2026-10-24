@@ -137,10 +137,9 @@ export default {
     pieOptions() {
       return {
         title: {
-          text: 'Текущие сутки',
+          text: 'Динамика потребления за текущие сутки',
           left: 'center',
-          top: 0,
-          textStyle: { fontSize: 12, fontWeight: 600 },
+          textStyle: { fontSize: 14, fontWeight: 600 },
         },
         tooltip: {
           trigger: 'item',
@@ -149,21 +148,15 @@ export default {
             return `${params.marker} ${params.name}: ${value.toFixed(2)} МВт·ч (${params.percent}%)`
           },
         },
-        legend: { 
-          type: 'scroll', 
-          bottom: 0, 
-          textStyle: { fontSize: 11 },
-          itemWidth: 10,
-          itemHeight: 10
-        },
+        legend: { bottom: 0 },
         series: [
           {
             type: 'pie',
-            radius: ['35%', '60%'], // Формат "бублика" для лучшей читаемости
-            center: ['50%', '45%'],
+            radius: '65%',            /* Вернули классический круг */
+            center: ['50%', '55%'],   /* Вернули положение */
             data: this.pieData,
-            label: { show: false }, // Убрали текст с кусков пирога
             emptyCircleStyle: { color: '#e0e0e0' },
+            /* Убрали label: { show: false }, чтобы подписи вернулись */
           },
         ],
       }
@@ -172,10 +165,9 @@ export default {
     pieOptionsPrev() {
       return {
         title: {
-          text: 'Предыдущие сутки',
+          text: 'Динамика потребления за предыдущие сутки',
           left: 'center',
-          top: 0,
-          textStyle: { fontSize: 12, fontWeight: 600 },
+          textStyle: { fontSize: 14, fontWeight: 600 },
         },
         tooltip: {
           trigger: 'item',
@@ -184,26 +176,18 @@ export default {
             return `${params.marker} ${params.name}: ${value.toFixed(2)} МВт·ч (${params.percent}%)`
           },
         },
-        legend: { 
-          type: 'scroll', 
-          bottom: 0, 
-          textStyle: { fontSize: 11 },
-          itemWidth: 10,
-          itemHeight: 10
-        },
+        legend: { bottom: 0 },
         series: [
           {
             type: 'pie',
-            radius: ['35%', '60%'],
-            center: ['50%', '45%'],
+            radius: '65%',
+            center: ['50%', '55%'],
             data: this.pieDataPrev,
-            label: { show: false },
             emptyCircleStyle: { color: '#e0e0e0' },
           },
         ],
       }
     },
-  },
 
   watch: {
     inited(newVal) {
