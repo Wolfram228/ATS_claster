@@ -1,23 +1,36 @@
 <template>
-  <v-container fluid class="map-page pa-0">
-    <v-app-bar color="primary" dark flat>
-      <v-app-bar-title>Интерактивная карта РФ</v-app-bar-title>
-    </v-app-bar>
+  <!-- Убрали fluid, чтобы ширина совпадала с другими страницами -->
+  <v-container class="map-page pa-4">
+    
+    <!-- Шапка страницы (вместо синего v-app-bar) -->
+    <v-card
+      class="pa-4 mb-4"
+      elevation="1"
+      rounded="lg"
+      variant="outlined"
+      style="border-color: rgba(0, 0, 0, 0.2)"
+    >
+      <div class="text-h5 font-weight-bold" align="left">
+        <!-- Выводим выбранный регион вместо статичного заголовка -->
+        {{ selectedRegion ? `Регион: ${selectedRegion}` : 'Интерактивная карта РФ' }}
+      </div>
+      <div class="text-body-2 text-grey-darken-1 mt-1" align="left">
+        Выберите доступный регион на карте, чтобы увидеть структуру его генерации.
+      </div>
+    </v-card>
 
-    <v-row class="ma-0 fill-height" no-gutters>
-      <!-- ЛЕВАЯ КОЛОНКА: карта -->
-      <v-col cols="12" md="7" class="map-col">
+    <!-- Контейнер для карты и диаграмм (занимает всё оставшееся место) -->
+    <v-row class="ma-0 content-row" no-gutters>
+      
+      <!-- ЛЕВАЯ КОЛОНКА: карта (увеличили до 8 колонок) -->
+      <v-col cols="12" md="8" class="map-col pr-md-2">
         <div class="map-wrapper" ref="mapContainer">
           <div v-html="svgContent"></div>
         </div>
-
-        <v-card v-if="selectedRegion" class="region-info" elevation="6">
-          <v-card-title class="text-body-1">{{ selectedRegion }}</v-card-title>
-        </v-card>
       </v-col>
 
-      <!-- ПРАВАЯ КОЛОНКА: диаграммы -->
-      <v-col cols="12" md="5" class="charts-col">
+      <!-- ПРАВАЯ КОЛОНКА: диаграммы (уменьшили до 4 колонок) -->
+      <v-col cols="12" md="4" class="charts-col pl-md-2">
         <div v-if="!inited" class="chart-placeholder">
           Загрузка данных для графиков...
         </div>
@@ -72,7 +85,6 @@ export default {
       prevDayLoading: state => state.prevDayLoading,
     }),
 
-    // Массив названий регионов, по которым есть данные (белый список из Vuex)
     availableRegions() {
       return (this.$store.getters.staticRegions || []).map(r => r.value)
     },
@@ -82,29 +94,20 @@ export default {
         return this.$store.state.selectedRegionBeforeConfirmed
       },
       set(region) {
-        // 1) регион для страницы «Информация» и других мест
         this.$store.commit('SET_SELECTED_REGION_BEFORE_CONFIRMED', region)
-    
-        // 2) регион для InfoCard и диаграмм «за прошлые/текущие сутки»
         this.$store.commit('SET_SELECTED_REGION_PREV', region)
-    
-        // 3) перезагружаем данные именно по этому региону
         this.$store.dispatch('fetchLastDayBoats')
         this.$store.dispatch('fetchPrevDayBoats')
-    
-        // 4) подсветка карты
         this.highlightRegion(region)
       },
     },
 
-    // отфильтрованные данные для текущих суток
     boatsForRegion() {
       const region = this.selectedRegion
       if (!region) return []
       return (this.lastDayBoats || []).filter(r => r.region === region)
     },
 
-    // отфильтрованные данные для предыдущих суток
     prevBoatsForRegion() {
       const region = this.selectedRegion
       if (!region) return []
@@ -187,8 +190,6 @@ export default {
   },
 
   watch: {
-    // Как только Vuex загрузит список доступных регионов (inited = true),
-    // перекрашиваем карту, так как до этого момента availableRegions пустой
     inited(newVal) {
       if (newVal) {
         this.$nextTick(() => {
@@ -218,10 +219,9 @@ export default {
         const isAvailable = available.includes(regionName)
 
         if (!isAvailable) {
-          // Если региона нет в staticRegions — делаем его серым и некликабельным
           path.style.cursor = 'default'
-          path.style.fill = '#e0e0e0' // Светло-серый цвет
-          path.style.pointerEvents = 'none' // Полностью отключает клики и наведения
+          path.style.fill = '#e0e0e0'
+          path.style.pointerEvents = 'none'
           
           path.onmouseenter = null
           path.onmouseleave = null
@@ -229,11 +229,10 @@ export default {
           return
         }
 
-        // Настройки для доступных регионов
         path.style.cursor = 'pointer'
         path.style.fill = '#90caf9'
         path.style.transition = '0.2s ease'
-        path.style.pointerEvents = 'auto' // Включаем интерактивность
+        path.style.pointerEvents = 'auto'
 
         path.onmouseenter = () => {
           if (this.selectedRegion !== regionName) {
@@ -261,13 +260,10 @@ export default {
         const pathTitle = path.getAttribute('title')
         
         if (!available.includes(pathTitle)) {
-          // Недоступные регионы всегда остаются серыми
           path.style.fill = '#e0e0e0'
         } else if (pathTitle === regionTitle) {
-          // Выбранный регион
           path.style.fill = '#ef5350'
         } else {
-          // Остальные доступные регионы
           path.style.fill = '#90caf9'
         }
       })
@@ -277,27 +273,31 @@ export default {
 </script>
 
 <style scoped>
+/* Контейнер страницы растягиваем на всю доступную высоту за вычетом глобальной шапки (64px) */
 .map-page {
-  height: 100vh;
   display: flex;
   flex-direction: column;
-  background: #f4f6f9;
-  overflow: hidden;
-}
-
-/* Карта и диаграммы — одной высоты (вычитаем app-bar) */
-.map-col,
-.charts-col {
   height: calc(100vh - 64px);
+  box-sizing: border-box;
+  background-color: #fafbfc; /* Легкий фон, как у других страниц */
 }
 
+/* Ряд с картой и диаграммами занимает всё оставшееся место */
+.content-row {
+  flex: 1;
+  min-height: 0; /* Важно для правильного сжатия flex-элементов */
+}
+
+/* Карта */
 .map-col {
-  position: relative;
+  height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
   background: #eef3f8;
-  border-right: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 8px; /* Скругление как у карточек */
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  overflow: hidden;
 }
 
 .map-wrapper {
@@ -306,36 +306,28 @@ export default {
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: 16px;
-  box-sizing: border-box;
+  padding: 10px;
 }
 
 .map-wrapper svg {
-  max-width: 95%;
-  max-height: 95%;
+  max-width: 100%;
+  max-height: 100%;
 }
 
-.region-info {
-  position: absolute;
-  bottom: 20px;
-  left: 20px;
-  width: 280px;
-  background: white;
-}
-
-/* Правая колонка — диаграммы столбиком, делят высоту пополам */
+/* Диаграммы */
 .charts-col {
+  height: 100%;
   display: flex;
   flex-direction: column;
-  padding: 8px;
-  gap: 8px;
-  background: #fafbfc;
-  box-sizing: border-box;
+  gap: 12px; /* Отступ между диаграммами */
 }
 
 .chart-box {
   flex: 1 1 0;
   min-height: 0;
+  background: #ffffff;
+  border-radius: 8px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
   overflow: hidden;
 }
 
@@ -353,27 +345,29 @@ export default {
   font-size: 14px;
   text-align: center;
   padding: 16px;
+  background: #ffffff;
+  border-radius: 8px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
 }
 
-/* На узких экранах — не фиксируем высоту, даём развернуться по содержимому */
+/* На узких экранах (мобильных) отключаем жесткую высоту, чтобы контент разворачивался */
 @media (max-width: 959px) {
   .map-page {
     height: auto;
-    overflow: visible;
   }
-
-  .map-col,
-  .charts-col {
+  
+  .map-col, .charts-col {
     height: auto;
+    min-height: 400px;
   }
-
+  
   .map-col {
-    min-height: 60vh;
+    margin-bottom: 16px;
   }
 
   .chart-box {
+    height: 350px;
     flex: none;
-    height: 320px;
   }
 }
 </style>
