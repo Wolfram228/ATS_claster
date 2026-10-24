@@ -136,71 +136,102 @@ export default {
 
     pieOptions() {
       return {
-        title: {
-          text: 'Динамика потребления за текущие сутки',
-          left: 'center'
+        baseOption: {
+          title: {
+            text: 'Динамика потребления за текущие сутки',
+            left: 'center',
+            textStyle: { fontSize: 14, fontWeight: 600 }
+          },
+          tooltip: {
+            trigger: 'item',
+            formatter: params => {
+              const value = Number(params.value)
+              return `${params.marker} ${params.name}: ${value.toFixed(2)} МВт·ч (${params.percent}%)`
+            }
+          },
+          legend: {
+            bottom: 0,
+            type: 'scroll',
+            textStyle: { fontSize: 12 }
+          },
+          series: [
+            {
+              type: 'pie',
+              radius: '70%',
+              data: this.pieData,
+              label: { show: false },   // ← убрали мусор на сегментах
+              labelLine: { show: false }
+            }
+          ]
         },
-        tooltip: {
-          trigger: 'item',
-          formatter: params => {
-            const marker = params.marker;
-            const name = params.name;
-            const value = Number(params.value);
-            const percent = params.percent;
-            return `${marker} ${name}: ${value.toFixed(2)} МВт·ч (${percent}%)`;
-          }
-        },
-        legend: {},
-        series: [
+        // Адаптивность: если ширина контейнера < 500px
+        media: [
           {
-            type: 'pie',
-            radius: '70%',
-            data: this.pieData
+            query: { maxWidth: 500 },
+            option: {
+              title: {
+                text: 'Текущие сутки',
+                textStyle: { fontSize: 11, fontWeight: 600 }
+              },
+              legend: {
+                textStyle: { fontSize: 10 },
+                itemWidth: 8,
+                itemHeight: 8
+              }
+            }
           }
         ]
-      };
+      }
     },
 
     pieOptionsPrev() {
       return {
-        title: {
-          text: 'Динамика потребления за предыдущие сутки',
-          left: 'center'
+        baseOption: {
+          title: {
+            text: 'Динамика потребления за предыдущие сутки',
+            left: 'center',
+            textStyle: { fontSize: 14, fontWeight: 600 }
+          },
+          tooltip: {
+            trigger: 'item',
+            formatter: params => {
+              const value = Number(params.value)
+              return `${params.marker} ${params.name}: ${value.toFixed(2)} МВт·ч (${params.percent}%)`
+            }
+          },
+          legend: {
+            bottom: 0,
+            type: 'scroll',
+            textStyle: { fontSize: 12 }
+          },
+          series: [
+            {
+              type: 'pie',
+              radius: '70%',
+              data: this.pieDataPrev,
+              label: { show: false },
+              labelLine: { show: false }
+            }
+          ]
         },
-        tooltip: {
-          trigger: 'item',
-          formatter: params => {
-            const marker = params.marker;
-            const name = params.name;
-            const value = Number(params.value);
-            const percent = params.percent;
-            return `${marker} ${name}: ${value.toFixed(2)} МВт·ч (${percent}%)`;
-          }
-        },
-        legend: {},
-        series: [
+        media: [
           {
-            type: 'pie',
-            radius: '70%',
-            data: this.pieDataPrev
+            query: { maxWidth: 500 },
+            option: {
+              title: {
+                text: 'Предыдущие сутки',
+                textStyle: { fontSize: 11, fontWeight: 600 }
+              },
+              legend: {
+                textStyle: { fontSize: 10 },
+                itemWidth: 8,
+                itemHeight: 8
+              }
+            }
           }
         ]
-      };
-    },
-  },  // ← ЭТА СКОБКА БЫЛА ПРОПУЩЕНА. Она закрывает computed.
-
-  watch: {
-    inited(newVal) {
-      if (newVal) {
-        this.$nextTick(() => {
-          this.addRegionClickHandlers()
-          if (this.selectedRegion) {
-            this.highlightRegion(this.selectedRegion)
-          }
-        })
       }
-    }
-  },
+    },
 
   mounted() {
     this.addRegionClickHandlers()
