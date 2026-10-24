@@ -1,42 +1,73 @@
 <template>
     <v-container v-if="!inited">Загрузка данных...</v-container>
     <v-container v-else>
-       <v-row>
-    <!-- Лучше обернуть текст в v-col, чтобы сетка не ломалась -->
-    <v-col cols="12" v-if="!selectedRegionPrevBeforeConfirmed" class="text-center text-body-2 text-grey-darken-1">
-        Текущий регион: {{ this.selectedRegionPrev }}
-    </v-col>
-
-    <v-col 
-        cols="12" 
-        sm="6"
-        lg="3"
-        v-for="i in infoArray"
-        :key="i.title"
-    >
-        <!-- Убрали v-container, оставили обычный div -->
-        <div v-if="lastDayLoading || prevDayLoading" class="pa-4 text-center text-grey">
-            Загрузка данных...
-        </div>
         
-        <InfoCard v-else>
-            <template v-slot:title>{{ i.title }}</template>
-            <template v-slot:info1>{{ i.info1 }}</template>
-            <template v-slot:info2>{{ i.info2 }}</template>
-            <template v-slot:percentage>
-                <div 
-                    class="text-caption" 
-                    :class="i.percentage.startsWith('-') ? 'text-error' : 'text-success'"
-                >
-                    {{ i.percentage }}
+        <!-- 1. БЛОК ВЫБОРА РЕГИОНА (ВОЗВРАЩАЕМ) -->
+        <v-row>
+            <v-col cols="12" md="10">
+                <v-menu location="top" class="flex-grow-1 me-3">
+                    <template v-slot:activator="{ props }">
+                        <v-btn color="blue-grey-lighten-5" class="mb-1" v-bind="props" min-height="55px" block> 
+                            {{ selectedRegionPrevBeforeConfirmed || "Выбор региона" }} 
+                        </v-btn>
+                    </template>
+
+                    <v-list style="max-height: 300px">
+                        <v-list-item
+                        v-for="(regionPrev, id) in regions"
+                        :key="id"
+                        :value="id"
+                        v-on:click="selectedRegionPrevBeforeConfirmed = regionPrev.value"
+                        >
+                        <v-list-item-title>{{ regionPrev.value }}</v-list-item-title>
+                        </v-list-item>
+                    </v-list>
+                </v-menu>
+            </v-col>
+            <v-col cols="12" md="2">
+                <v-btn color="blue-grey-lighten-1" @click="changeRegionPrev" min-height="55px" block> Применить </v-btn>
+                <div v-if="selectedRegionPrevBeforeConfirmed && selectedRegionPrev !== selectedRegionPrevBeforeConfirmed" class="text-error mt-2">
+                    Вы не применили изменения
                 </div>
-            </template>
-        </InfoCard>
-    </v-col>
-</v-row>
-        <!--<v-row>
-            <div class="text-body-2 text-grey-darken-1 mt-1" align="left">*Данные приведены за период {{ getLastDayRange }} (в сравнении с {{ getPrevDayRange }})</div>
-        </v-row>-->
+            </v-col>
+        </v-row>
+
+        <!-- 2. БЛОК КАРТОЧЕК (ИСПРАВЛЕННАЯ ШИРИНА) -->
+        <v-row>
+            <!-- Текущий регион по центру -->
+            <v-col cols="12" v-if="!selectedRegionPrevBeforeConfirmed" class="text-center text-body-2 text-grey-darken-1">
+                Текущий регион: {{ this.selectedRegionPrev }}
+            </v-col>
+
+            <!-- Сами карточки. Убран v-container, вместо него обычный div -->
+            <v-col 
+                cols="12" 
+                sm="6"
+                lg="3"
+                v-for="i in infoArray"
+                :key="i.title"
+            >
+                <div v-if="lastDayLoading || prevDayLoading" class="pa-4 text-center text-grey">
+                    Загрузка данных...
+                </div>
+                
+                <InfoCard v-else>
+                    <template v-slot:title>{{ i.title }}</template>
+                    <template v-slot:info1>{{ i.info1 }}</template>
+                    <template v-slot:info2>{{ i.info2 }}</template>
+                    <template v-slot:percentage>
+                        <div 
+                            class="text-caption" 
+                            :class="i.percentage.startsWith('-') ? 'text-error' : 'text-success'"
+                        >
+                            {{ i.percentage }}
+                        </div>
+                    </template>
+                </InfoCard>
+            </v-col>
+        </v-row>
+
+        <!-- 3. БЛОК С ГРАФИКАМИ (БЕЗ ИЗМЕНЕНИЙ) -->
         <v-row>
             <v-col>
                 <v-card
@@ -49,6 +80,7 @@
                     <div class="text-h5 font-weight-bold" align="left">Динамика потребления</div>
                     <div class="text-body-2 text-grey-darken-1 mt-1" align="left">Потребление электроэнергии за выбранный период</div>
                     <div class="text-body-2 text-grey-darken-1 mt-6" align="left">Интерактивные графики</div>
+                    
                     <v-container>
                         <v-row>
                             <v-col cols="12" md="4">
@@ -62,6 +94,7 @@
                             </v-col>
                         </v-row>
                     </v-container>
+                    
                     <v-container>
                         <v-row>
                             <v-col cols="12" md="3">
@@ -83,7 +116,6 @@
                             <v-col cols="12" md="2">
                                 <v-menu location="top" class="flex-grow-1 me-3">
                                     <template v-slot:activator="{ props }">
-                                        <!-- <v-btn color="blue-grey-lighten-5" v-bind="props" min-height="55px" block> {{ selectedRegion }} </v-btn> -->
                                         <v-btn color="blue-grey-lighten-5" v-bind="props" min-height="55px" block class="region-btn"> {{ selectedRegionBeforeConfirmed || "Выбор региона" }} </v-btn>
                                     </template>
 
@@ -102,7 +134,6 @@
                             <v-col cols="12" md="2">
                                 <v-menu location="bottom">
                                     <template v-slot:activator="{ props }">
-                                        <!-- <v-btn color="blue-grey-lighten-5" v-bind="props" min-height="55px" block> {{ filters.region || regions[0].value }} </v-btn> -->
                                         <v-btn color="blue-grey-lighten-5" v-bind="props" min-height="55px" block> {{ selectedHourBeforeConfirmed ?? "Выбор часа" }} </v-btn>
                                     </template>
 
@@ -128,6 +159,7 @@
                             </v-col>
                         </v-row>
                     </v-container>
+
                     <v-container v-if="loading">
                         Загрузка данных...
                     </v-container>
