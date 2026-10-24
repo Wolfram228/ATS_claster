@@ -1211,12 +1211,12 @@ export default {
 
 <style scoped>
 .price-page {
-  background: linear-gradient(180deg, #f7f9fb 0%, #ffffff 40%);
+  background: transparent; 
 }
 
 .section-card {
   border: 1px solid rgba(23, 43, 77, 0.14);
-  box-shadow: 0 3px 14px rgba(23, 43, 77, 0.08) !important;
+  box-shadow: none !important; 
   overflow: hidden;
 }
 
