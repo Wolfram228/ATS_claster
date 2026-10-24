@@ -1,58 +1,39 @@
 <template>
     <v-container v-if="!inited">Загрузка данных...</v-container>
     <v-container v-else>
-        <v-row>
-            <v-col cols="12" md="10">
-                <v-menu location="top" class="flex-grow-1 me-3">
-                    <template v-slot:activator="{ props }">
-                        <!-- <v-btn color="blue-grey-lighten-5" class="mb-1" v-bind="props" min-height="55px" block> {{ selectedRegionPrev }} </v-btn> -->
-                        <v-btn color="blue-grey-lighten-5" class="mb-1" v-bind="props" min-height="55px" block> {{ selectedRegionPrevBeforeConfirmed || "Выбор региона" }} </v-btn>
-                    </template>
+       <v-row>
+    <!-- Лучше обернуть текст в v-col, чтобы сетка не ломалась -->
+    <v-col cols="12" v-if="!selectedRegionPrevBeforeConfirmed" class="text-center text-body-2 text-grey-darken-1">
+        Текущий регион: {{ this.selectedRegionPrev }}
+    </v-col>
 
-                    <v-list style="max-height: 300px">
-                        <v-list-item
-                        v-for="(regionPrev, id) in regions"
-                        :key="id"
-                        :value="id"
-                        v-on:click="selectedRegionPrevBeforeConfirmed = regionPrev.value"
-                        >
-                        <v-list-item-title>{{ regionPrev.value }}</v-list-item-title>
-                        </v-list-item>
-                    </v-list>
-                </v-menu>
-            </v-col>
-            <v-col cols="12" md="2">
-                <v-btn color="blue-grey-lighten-1" @click="changeRegionPrev" min-height="55px" block> Применить </v-btn>
-                <div v-if="selectedRegionPrevBeforeConfirmed && selectedRegionPrev !== selectedRegionPrevBeforeConfirmed" class="text-error mt-2">Вы не применили изменения</div>
-            </v-col>
-        </v-row>
-        <v-row>
-            <div v-if="!selectedRegionPrevBeforeConfirmed" class="text-body-2 text-grey-darken-1" style="text-align: center; width: 100%"> Текущий регион: {{ this.selectedRegionPrev }} </div>
-            <v-col 
-            cols="12" 
-            sm="6"
-            lg="3"
-            v-for="i in infoArray">
-                <v-container v-if="lastDayLoading || prevDayLoading">
-                    Загрузка данных...
-                </v-container>
-                <v-container v-else>
-                    <InfoCard>
-                        <template v-slot:title>{{ i.title }}</template>
-                        <template v-slot:info1> {{ i.info1 }}</template>
-                        <template v-slot:info2> {{ i.info2 }}</template>
-                        <template v-slot:percentage>
-                            <div 
-                                class="text-caption" 
-                                :class="i.percentage.startsWith('-') ? 'text-error' : 'text-success'"
-                            >
-                                {{ i.percentage }}
-                            </div>
-                        </template>
-                    </InfoCard>
-                </v-container>
-            </v-col>
-        </v-row>
+    <v-col 
+        cols="12" 
+        sm="6"
+        lg="3"
+        v-for="i in infoArray"
+        :key="i.title"
+    >
+        <!-- Убрали v-container, оставили обычный div -->
+        <div v-if="lastDayLoading || prevDayLoading" class="pa-4 text-center text-grey">
+            Загрузка данных...
+        </div>
+        
+        <InfoCard v-else>
+            <template v-slot:title>{{ i.title }}</template>
+            <template v-slot:info1>{{ i.info1 }}</template>
+            <template v-slot:info2>{{ i.info2 }}</template>
+            <template v-slot:percentage>
+                <div 
+                    class="text-caption" 
+                    :class="i.percentage.startsWith('-') ? 'text-error' : 'text-success'"
+                >
+                    {{ i.percentage }}
+                </div>
+            </template>
+        </InfoCard>
+    </v-col>
+</v-row>
         <!--<v-row>
             <div class="text-body-2 text-grey-darken-1 mt-1" align="left">*Данные приведены за период {{ getLastDayRange }} (в сравнении с {{ getPrevDayRange }})</div>
         </v-row>-->
