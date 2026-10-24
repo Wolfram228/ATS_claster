@@ -806,17 +806,24 @@ export default {
     },
 
     created() {
-        if (!this.$store.state.inited) {
+         if (!this.$store.state.inited) {
             this.$store.dispatch('initBoats');
         }
         
-        const regionActive = this.selectedRegion && this.selectedRegion !== 'Все регионы';
-        if (!regionActive) this.selectedRegion = this.regions[0]?.value;;
-
-        if (!this.selectedRegionPrevBeforeConfirmed) {
-        this.selectedRegionPrevBeforeConfirmed = this.$store.state.selectedRegionBeforeConfirmed
+        // 1. Синхронизируем регион для верхнего селекта
+        if (this.$store.state.selectedRegionBeforeConfirmed) {
+            this.selectedRegionPrevBeforeConfirmed = this.$store.state.selectedRegionBeforeConfirmed;
         }
-        //this.selectedRegionPrev = this.regionsPrev[0]?.value;
+
+        // 2. Синхронизируем регион для нижнего блока графиков
+        if (this.selectedRegionBeforeConfirmed && this.selectedRegion !== this.selectedRegionBeforeConfirmed) {
+            this.selectedRegion = this.selectedRegionBeforeConfirmed;
+            this.$store.dispatch("fetchChangableBoats");
+        }
+
+        // 3. Устанавливаем регион по умолчанию (если ничего не выбрано)
+        const regionActive = this.selectedRegion && this.selectedRegion !== 'Все регионы';
+        if (!regionActive) this.selectedRegion = this.regions[0]?.value;
 
         this.draftDateAfter = this.$store.state.selectedDateAfter
         this.draftDateBefore = this.$store.state.selectedDateBefore
