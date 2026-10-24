@@ -2,7 +2,7 @@
   <!-- Убрали fluid, чтобы ширина совпадала с другими страницами -->
   <v-container class="map-page pa-4">
     
-    <!-- Шапка страницы (вместо синего v-app-bar) -->
+    <!-- Шапка страницы -->
     <v-card
       class="pa-4 mb-4"
       elevation="1"
@@ -19,17 +19,17 @@
       </div>
     </v-card>
 
-    <!-- Контейнер для карты и диаграмм (занимает всё оставшееся место) -->
+    <!-- Контейнер для карты и диаграмм -->
     <v-row class="ma-0 content-row" no-gutters>
       
-      <!-- ЛЕВАЯ КОЛОНКА: карта (увеличили до 8 колонок) -->
+      <!-- ЛЕВАЯ КОЛОНКА: карта -->
       <v-col cols="12" md="8" class="map-col pr-md-2">
         <div class="map-wrapper" ref="mapContainer">
           <div v-html="svgContent"></div>
         </div>
       </v-col>
 
-      <!-- ПРАВАЯ КОЛОНКА: диаграммы (уменьшили до 4 колонок) -->
+      <!-- ПРАВАЯ КОЛОНКА: диаграммы -->
       <v-col cols="12" md="4" class="charts-col pl-md-2">
         <div v-if="!inited" class="chart-placeholder">
           Загрузка данных для графиков...
@@ -42,11 +42,11 @@
 
           <template v-else>
             <div class="chart-box">
-              <VChart :option="" autoresize class="chart-fill" />
+              <VChart :option="pieOptions" autoresize class="chart-fill" />
             </div>
 
             <div v-if="!prevDayLoading" class="chart-box">
-              <VChart :option="Prev" autoresize class="chart-fill" />
+              <VChart :option="pieOptionsPrev" autoresize class="chart-fill" />
             </div>
           </template>
         </template>
@@ -134,16 +134,21 @@ export default {
       }))
     },
 
-   pieOptions() {
+    pieOptions() {
       return {
         title: {
           text: 'Текущие сутки',
           left: 'center',
           top: 0,
-          textStyle: { fontSize: 12, fontWeight: 600 }, // Уменьшили шрифт
+          textStyle: { fontSize: 12, fontWeight: 600 },
         },
-        tooltip: { trigger: 'item' },
-        // Настроили легенду: она будет скроллиться, если не влезает, и шрифт меньше
+        tooltip: {
+          trigger: 'item',
+          formatter: params => {
+            const value = Number(params.value)
+            return `${params.marker} ${params.name}: ${value.toFixed(2)} МВт·ч (${params.percent}%)`
+          },
+        },
         legend: { 
           type: 'scroll', 
           bottom: 0, 
@@ -154,14 +159,16 @@ export default {
         series: [
           {
             type: 'pie',
-            radius: ['35%', '60%'], // Сделали "бубликом", чтобы было место для легенды
-            center: ['50%', '50%'],
+            radius: ['35%', '60%'], // Формат "бублика" для лучшей читаемости
+            center: ['50%', '45%'],
             data: this.pieData,
-            label: { show: false }, // Скрыли подписи на самих кусках (они мешают на телефоне)
+            label: { show: false }, // Убрали текст с кусков пирога
+            emptyCircleStyle: { color: '#e0e0e0' },
           },
         ],
       }
     },
+
     pieOptionsPrev() {
       return {
         title: {
@@ -170,7 +177,13 @@ export default {
           top: 0,
           textStyle: { fontSize: 12, fontWeight: 600 },
         },
-        tooltip: { trigger: 'item' },
+        tooltip: {
+          trigger: 'item',
+          formatter: params => {
+            const value = Number(params.value)
+            return `${params.marker} ${params.name}: ${value.toFixed(2)} МВт·ч (${params.percent}%)`
+          },
+        },
         legend: { 
           type: 'scroll', 
           bottom: 0, 
@@ -182,13 +195,15 @@ export default {
           {
             type: 'pie',
             radius: ['35%', '60%'],
-            center: ['50%', '50%'],
+            center: ['50%', '45%'],
             data: this.pieDataPrev,
             label: { show: false },
+            emptyCircleStyle: { color: '#e0e0e0' },
           },
         ],
       }
     },
+  },
 
   watch: {
     inited(newVal) {
@@ -307,14 +322,13 @@ export default {
   min-height: 0;
 }
 
-/* Настройки SVG карты */
 .map-wrapper svg {
   max-width: 100%;
   max-height: 100%;
   width: auto;
   height: auto;
   display: block;
-  margin: auto; /* Центрируем на десктопе */
+  margin: auto;
 }
 
 /* --- ДИАГРАММЫ --- */
@@ -356,7 +370,7 @@ export default {
 @media (min-width: 960px) {
   .content-row {
     min-height: 500px;
-    max-height: calc(100vh - 220px); /* Ограничиваем высоту, чтобы не растягивалось */
+    max-height: calc(100vh - 220px);
   }
 }
 
@@ -368,20 +382,20 @@ export default {
 
   .map-col {
     margin-bottom: 16px;
-    height: 350px; /* Фиксированная высота на телефоне */
-    overflow: hidden; /* Прячем то, что не влезло */
+    height: 350px; /* Карта на телефоне имеет фиксированную высоту */
+    overflow: hidden; /* Скрываем всё, что вылезает */
   }
 
   .map-wrapper {
-    /* Включаем скролл/свайп внутри карты! */
+    /* Включаем прокрутку по карте */
     overflow: auto;
     -webkit-overflow-scrolling: touch;
     justify-content: flex-start;
     align-items: flex-start;
   }
 
+  /* Принудительно делаем карту больше, чтобы её можно было листать пальцем */
   .map-wrapper svg {
-    /* Заставляем карту быть больше, чтобы её можно было рассматривать свайпами */
     min-width: 700px; 
     width: 700px;
     max-height: none;
