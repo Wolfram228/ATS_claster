@@ -273,58 +273,63 @@ export default {
 </script>
 
 <style scoped>
-/* Контейнер страницы растягиваем на всю доступную высоту за вычетом глобальной шапки (64px) */
+/* ---------- СТРАНИЦА ---------- */
 .map-page {
   display: flex;
   flex-direction: column;
-  height: calc(100vh - 64px);
-  box-sizing: border-box;
-
+  min-height: calc(100vh - 64px);
+  /* dvh лучше на мобильных: учитывает скрытие адресной строки */
+  min-height: calc(100dvh - 64px);
+  background: #ffffff;
+  /* Убрали overflow: hidden — пусть страница прокручивается, если контент не влез */
 }
 
-/* Ряд с картой и диаграммами занимает всё оставшееся место */
+/* ---------- РЯД КАРТА + ДИАГРАММЫ ---------- */
 .content-row {
-  flex: 1;
-  min-height: 0; /* Важно для правильного сжатия flex-элементов */
+  flex: 1 1 auto;
+  min-height: 0; /* разрешаем сжатие */
 }
 
-/* Карта */
+/* ---------- КАРТА ---------- */
 .map-col {
-  height: 100%;
   display: flex;
-  align-items: center;
+  align-items: stretch;
   justify-content: center;
   background: #eef3f8;
-  border-radius: 8px; /* Скругление как у карточек */
+  border-radius: 8px;
   border: 1px solid rgba(0, 0, 0, 0.1);
   overflow: hidden;
 }
 
 .map-wrapper {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 100%;
   height: 100%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 10px;
+  padding: 8px;
+  min-height: 0;
 }
 
 .map-wrapper svg {
   max-width: 100%;
   max-height: 100%;
+  width: auto;
+  height: auto;
+  display: block;
 }
 
-/* Диаграммы */
+/* ---------- ДИАГРАММЫ ---------- */
 .charts-col {
-  height: 100%;
   display: flex;
   flex-direction: column;
-  gap: 12px; /* Отступ между диаграммами */
+  gap: 12px;
 }
 
 .chart-box {
   flex: 1 1 0;
-  min-height: 0;
+  min-height: 220px; /* ниже этого график становится нечитаемым */
   background: #ffffff;
   border-radius: 8px;
   border: 1px solid rgba(0, 0, 0, 0.1);
@@ -350,23 +355,51 @@ export default {
   border: 1px solid rgba(0, 0, 0, 0.1);
 }
 
-/* На узких экранах (мобильных) отключаем жесткую высоту, чтобы контент разворачивался */
-@media (max-width: 959px) {
-  .map-page {
-    height: auto;
-  }
-  
-  .map-col, .charts-col {
-    height: auto;
-    min-height: 400px;
-  }
-  
-  .map-col {
-    margin-bottom: 16px;
+/* ---------- ПЛАНШЕТЫ И ДЕСКТОП (md и выше) ---------- */
+@media (min-width: 960px) {
+  .content-row {
+    /* Гарантируем достаточную высоту, но не даём разъехаться за экран */
+    min-height: 480px;
+    max-height: calc(100vh - 260px); /* 64 app-bar + 32 pa-4 + ~150 header + mb-4 */
   }
 
+  /* .map-col по умолчанию растягивается на 100% .content-row через v-row */
+}
+
+/* ---------- НОУТБУКИ / БОЛЬШИЕ ЭКРАНЫ (lg и выше) ---------- */
+@media (min-width: 1280px) {
+  .content-row {
+    min-height: 560px;
+  }
+}
+
+/* ---------- МОБИЛЬНЫЕ / ПЛАНШЕТЫ (sm, xs) ---------- */
+@media (max-width: 959px) {
+  .map-page {
+    min-height: 0; /* на мобильных пусть страница просто прокручивается */
+  }
+
+  /* Карта и диаграммы складываются друг под друга */
+  .map-col {
+    margin-bottom: 16px;
+    /* Фиксированная aspect-ratio вместо min-height: карта не схлопнется и не растянется */
+    aspect-ratio: 16 / 10;
+    max-height: 55vh;
+  }
+
+  .charts-col {
+    height: auto;
+  }
+
+  /* На мобильных у каждой диаграммы фиксированная высота */
   .chart-box {
-    height: 350px;
+    flex: none;
+    height: 300px;
+    min-height: 0;
+  }
+
+  .chart-placeholder {
+    height: 300px;
     flex: none;
   }
 }
