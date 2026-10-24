@@ -134,60 +134,59 @@ export default {
       }))
     },
 
-    pieOptions() {
+       pieOptions() {
       return {
         title: {
           text: 'Динамика потребления за текущие сутки',
-          left: 'center',
-          textStyle: { fontSize: 14, fontWeight: 600 },
+          left: 'center'
         },
         tooltip: {
           trigger: 'item',
           formatter: params => {
-            const value = Number(params.value)
-            return `${params.marker} ${params.name}: ${value.toFixed(2)} МВт·ч (${params.percent}%)`
-          },
+            const marker = params.marker;
+            const name = params.name;
+            const value = Number(params.value);
+            const percent = params.percent;
+            return `${marker} ${name}: ${value.toFixed(2)} МВт·ч (${percent}%)`;
+          }
         },
-        legend: { bottom: 0 },
+        legend: {},
         series: [
           {
             type: 'pie',
-            radius: '65%',            
-            center: ['50%', '55%'],   
-            data: this.pieData,
-            emptyCircleStyle: { color: '#e0e0e0' },
-          },
-        ],
-      }
+            radius: '70%',
+            data: this.pieData
+          }
+        ]
+      };
     },
 
     pieOptionsPrev() {
       return {
         title: {
           text: 'Динамика потребления за предыдущие сутки',
-          left: 'center',
-          textStyle: { fontSize: 14, fontWeight: 600 },
+          left: 'center'
         },
         tooltip: {
           trigger: 'item',
           formatter: params => {
-            const value = Number(params.value)
-            return `${params.marker} ${params.name}: ${value.toFixed(2)} МВт·ч (${params.percent}%)`
-          },
+            const marker = params.marker;
+            const name = params.name;
+            const value = Number(params.value);
+            const percent = params.percent;
+            return `${marker} ${name}: ${value.toFixed(2)} МВт·ч (${percent}%)`;
+          }
         },
-        legend: { bottom: 0 },
+        legend: {},
         series: [
           {
             type: 'pie',
-            radius: '65%',
-            center: ['50%', '55%'],
-            data: this.pieDataPrev,
-            emptyCircleStyle: { color: '#e0e0e0' },
-          },
-        ],
-      }
+            radius: '70%',
+            data: this.pieDataPrev
+          }
+        ]
+      };
     },
-  }, // <--- ВОТ ЗДЕСЬ БЫЛА ПРОПУЩЕНА ЭТА ЗАКРЫВАЮЩАЯ СКОБКА
 
   watch: {
     inited(newVal) {
