@@ -134,7 +134,7 @@ export default {
       }))
     },
 
-       pieOptions() {
+    pieOptions() {
       return {
         title: {
           text: 'Динамика потребления за текущие сутки',
@@ -187,6 +187,7 @@ export default {
         ]
       };
     },
+  }, // <--- ЗДЕСЬ БЫЛА ПРОПУЩЕНА ЭТА СКОБКА. ОНА ЗАКРЫВАЕТ БЛОК computed.
 
   watch: {
     inited(newVal) {
