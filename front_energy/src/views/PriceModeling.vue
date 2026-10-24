@@ -1,15 +1,15 @@
 <template>
-  <v-container class="price-page pa-4">
+  <v-container class="pa-4">
+    <!-- Блок 1: Настройки -->
     <v-card
-      class="section-card pa-5 mb-4"
-      elevation="2"
-      rounded="xl"
+      class="pa-4 mb-4"
+      elevation="1"
+      rounded="lg"
+      variant="outlined"
+      style="border-color: rgba(0, 0, 0, 0.2)"
     >
-      <div class="page-title" align="left">
-        Моделирование цены электроэнергии
-      </div>
-
-      <div class="page-subtitle" align="left">
+      <div class="text-h5 font-weight-bold" align="left">Моделирование цены электроэнергии</div>
+      <div class="text-body-2 text-grey-darken-1 mt-1" align="left">
         Построение прогноза цены продажи электроэнергии на основе выбранного региона,
         доступных факторов, температуры и метода наименьших квадратов / OLS.
       </div>
@@ -19,15 +19,12 @@
           <v-col cols="12" md="3">
             <v-text-field v-model="dateFrom" label="Дата с" type="date" hide-details />
           </v-col>
-
           <v-col cols="12" md="3">
             <v-text-field v-model="dateTo" label="Дата по" type="date" hide-details />
           </v-col>
-
           <v-col cols="12" md="3">
             <v-select v-model="selectedRegion" :items="regionItems" label="Регион" hide-details />
           </v-col>
-
           <v-col cols="12" md="3">
             <v-select v-model="targetVariable" :items="targetVariables" label="Целевая переменная" hide-details />
           </v-col>
@@ -36,17 +33,17 @@
         <v-row class="mt-4">
           <v-col cols="12">
             <v-card
-              class="factors-card pa-4"
+              class="pa-4"
               elevation="0"
-              rounded="xl"
+              rounded="lg"
               variant="outlined"
+              style="border-color: rgba(0, 0, 0, 0.12)"
             >
               <div class="d-flex align-center justify-space-between mb-2">
-                <div class="section-title small-title">Факторы модели</div>
-                <v-chip color="blue-grey-lighten-4" variant="flat" class="soft-chip">Рекомендуемый набор выбран</v-chip>
+                <div class="text-h6 font-weight-bold">Факторы модели</div>
+                <v-chip color="blue-grey-lighten-4" variant="flat">Рекомендуемый набор выбран</v-chip>
               </div>
-
-              <div class="section-subtitle mb-4" align="left">
+              <div class="text-body-2 text-grey-darken-1 mb-4" align="left">
                 Для временных признаков используется циклическое кодирование. Месяц учитывается как дамми-переменная.
                 Температура подтягивается из внешнего погодного источника по региону и часу.
               </div>
@@ -69,7 +66,6 @@
           <v-col cols="12" md="4">
             <v-btn
               block
-              class="action-btn"
               min-height="52"
               color="blue-grey-lighten-1"
               :loading="priceAnalyticsLoading || weatherLoading"
@@ -79,11 +75,9 @@
               Загрузить данные
             </v-btn>
           </v-col>
-
           <v-col cols="12" md="4">
             <v-btn
               block
-              class="action-btn"
               min-height="52"
               color="blue-lighten-1"
               :loading="priceAnalyticsLoading || weatherLoading"
@@ -93,11 +87,9 @@
               Показать статистику
             </v-btn>
           </v-col>
-
           <v-col cols="12" md="4">
             <v-btn
               block
-              class="action-btn"
               min-height="52"
               color="green-lighten-1"
               :loading="priceAnalyticsLoading || weatherLoading"
@@ -112,141 +104,139 @@
         <div v-if="isDateInvalid" class="text-error mt-3">
           Введён некорректный диапазон дат.
         </div>
-
         <div v-if="hasPendingChanges" class="text-error mt-3">
           Вы изменили параметры, но ещё не загрузили данные.
         </div>
       </v-container>
     </v-card>
 
-    <v-alert v-if="priceAnalyticsError" type="error" variant="tonal" class="status-alert mb-4">
+    <!-- Уведомления -->
+    <v-alert v-if="priceAnalyticsError" type="error" variant="tonal" class="mb-4">
       Ошибка загрузки данных проекта. Проверьте авторизацию и доступность сервера.
     </v-alert>
-
-    <v-alert v-if="weatherError" type="warning" variant="tonal" class="status-alert mb-4">
+    <v-alert v-if="weatherError" type="warning" variant="tonal" class="mb-4">
       {{ weatherError }}
     </v-alert>
-
-    <v-alert v-if="loadedOnce && temperatureCoverage.total > 0" type="info" variant="tonal" class="status-alert mb-4">
+    <v-alert v-if="loadedOnce && temperatureCoverage.total > 0" type="info" variant="tonal" class="mb-4">
       Температура загружена для {{ temperatureCoverage.loaded }} из {{ temperatureCoverage.total }} наблюдений.
     </v-alert>
-
-    <v-alert v-if="loadedOnce && !filteredRows.length" type="info" variant="tonal" class="status-alert mb-4">
+    <v-alert v-if="loadedOnce && !filteredRows.length" type="info" variant="tonal" class="mb-4">
       Нет данных по выбранному региону и периоду.
     </v-alert>
-
     <v-alert
       v-if="loadedOnce && filteredRows.length > 0 && filteredRows.length < 168"
       type="warning"
       variant="tonal"
-      class="status-alert mb-4"
+      class="mb-4"
     >
       Для более устойчивого прогноза рекомендуется выбирать период не менее 7 дней.
     </v-alert>
 
+    <!-- Блок 2: Статистика -->
     <v-card
       v-if="statistics"
-      class="section-card pa-5 mb-4"
-      elevation="2"
-      rounded="xl"
+      class="pa-4 mb-4"
+      elevation="1"
+      rounded="lg"
+      variant="outlined"
+      style="border-color: rgba(0, 0, 0, 0.2)"
     >
-      <div class="section-title" align="left">Описательная статистика</div>
-      <div class="section-subtitle" align="left">
+      <div class="text-h5 font-weight-bold" align="left">Описательная статистика</div>
+      <div class="text-body-2 text-grey-darken-1 mt-1" align="left">
         Расчёт выполнен по фактическим данным для выбранного региона.
       </div>
-
-      <div class="section-subtitle" align="left">
+      <div class="text-body-2 text-grey-darken-1 mt-1 mb-4" align="left">
         Регион: {{ appliedRegion }} · Период: {{ formatDisplayDate(appliedDateFrom) }} — {{ formatDisplayDate(appliedDateTo) }}
       </div>
 
-      <v-table class="mt-4 data-table-clean describe-table">
-        <thead>
-          <tr>
-            <th>Показатель</th>
-            <th v-for="variable in statistics.variables" :key="variable.key">{{ variable.label }}</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>Количество наблюдений</td>
-            <td v-for="variable in statistics.variables" :key="variable.key">{{ formatDescribeValue(variable.n, 0) }}</td>
-          </tr>
-          <tr>
-            <td>Среднее значение</td>
-            <td v-for="variable in statistics.variables" :key="variable.key">{{ formatDescribeValue(variable.mean, 2) }}</td>
-          </tr>
-          <tr>
-            <td>Стандартное отклонение</td>
-            <td v-for="variable in statistics.variables" :key="variable.key">{{ formatDescribeValue(variable.sd, 2) }}</td>
-          </tr>
-          <tr>
-            <td>Медиана</td>
-            <td v-for="variable in statistics.variables" :key="variable.key">{{ formatDescribeValue(variable.median, 2) }}</td>
-          </tr>
-          <tr>
-            <td>Усечённое среднее (10 %)</td>
-            <td v-for="variable in statistics.variables" :key="variable.key">{{ formatDescribeValue(variable.trimmed, 2) }}</td>
-          </tr>
-          <tr>
-            <td>Медианное абсолютное отклонение</td>
-            <td v-for="variable in statistics.variables" :key="variable.key">{{ formatDescribeValue(variable.mad, 2) }}</td>
-          </tr>
-          <tr>
-            <td>Минимум</td>
-            <td v-for="variable in statistics.variables" :key="variable.key">{{ formatDescribeValue(variable.min, 2) }}</td>
-          </tr>
-          <tr>
-            <td>Максимум</td>
-            <td v-for="variable in statistics.variables" :key="variable.key">{{ formatDescribeValue(variable.max, 2) }}</td>
-          </tr>
-          <tr>
-            <td>Размах (max − min)</td>
-            <td v-for="variable in statistics.variables" :key="variable.key">{{ formatDescribeValue(variable.range, 2) }}</td>
-          </tr>
-          <tr>
-            <td>Асимметрия</td>
-            <td v-for="variable in statistics.variables" :key="variable.key">{{ formatDescribeValue(variable.skew, 3) }}</td>
-          </tr>
-          <tr>
-            <td>Эксцесс</td>
-            <td v-for="variable in statistics.variables" :key="variable.key">{{ formatDescribeValue(variable.kurtosis, 3) }}</td>
-          </tr>
-          <tr>
-            <td>Стандартная ошибка среднего</td>
-            <td v-for="variable in statistics.variables" :key="variable.key">{{ formatDescribeValue(variable.se, 2) }}</td>
-          </tr>
-        </tbody>
-      </v-table>
+      <div class="correlation-scroll mt-4">
+        <v-table class="text-center">
+          <thead>
+            <tr>
+              <th class="text-left font-weight-bold">Показатель</th>
+              <th v-for="variable in statistics.variables" :key="variable.key" class="font-weight-bold">{{ variable.label }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="text-left">Количество наблюдений</td>
+              <td v-for="variable in statistics.variables" :key="variable.key">{{ formatDescribeValue(variable.n, 0) }}</td>
+            </tr>
+            <tr>
+              <td class="text-left">Среднее значение</td>
+              <td v-for="variable in statistics.variables" :key="variable.key">{{ formatDescribeValue(variable.mean, 2) }}</td>
+            </tr>
+            <tr>
+              <td class="text-left">Стандартное отклонение</td>
+              <td v-for="variable in statistics.variables" :key="variable.key">{{ formatDescribeValue(variable.sd, 2) }}</td>
+            </tr>
+            <tr>
+              <td class="text-left">Медиана</td>
+              <td v-for="variable in statistics.variables" :key="variable.key">{{ formatDescribeValue(variable.median, 2) }}</td>
+            </tr>
+            <tr>
+              <td class="text-left">Усечённое среднее (10 %)</td>
+              <td v-for="variable in statistics.variables" :key="variable.key">{{ formatDescribeValue(variable.trimmed, 2) }}</td>
+            </tr>
+            <tr>
+              <td class="text-left">Медианное абсолютное отклонение</td>
+              <td v-for="variable in statistics.variables" :key="variable.key">{{ formatDescribeValue(variable.mad, 2) }}</td>
+            </tr>
+            <tr>
+              <td class="text-left">Минимум</td>
+              <td v-for="variable in statistics.variables" :key="variable.key">{{ formatDescribeValue(variable.min, 2) }}</td>
+            </tr>
+            <tr>
+              <td class="text-left">Максимум</td>
+              <td v-for="variable in statistics.variables" :key="variable.key">{{ formatDescribeValue(variable.max, 2) }}</td>
+            </tr>
+            <tr>
+              <td class="text-left">Размах (max − min)</td>
+              <td v-for="variable in statistics.variables" :key="variable.key">{{ formatDescribeValue(variable.range, 2) }}</td>
+            </tr>
+            <tr>
+              <td class="text-left">Асимметрия</td>
+              <td v-for="variable in statistics.variables" :key="variable.key">{{ formatDescribeValue(variable.skew, 3) }}</td>
+            </tr>
+            <tr>
+              <td class="text-left">Эксцесс</td>
+              <td v-for="variable in statistics.variables" :key="variable.key">{{ formatDescribeValue(variable.kurtosis, 3) }}</td>
+            </tr>
+            <tr>
+              <td class="text-left">Стандартная ошибка среднего</td>
+              <td v-for="variable in statistics.variables" :key="variable.key">{{ formatDescribeValue(variable.se, 2) }}</td>
+            </tr>
+          </tbody>
+        </v-table>
+      </div>
     </v-card>
 
+    <!-- Блок 3: Корреляция -->
     <v-card
       v-if="correlationMatrix"
-      class="section-card pa-5 mb-4"
-      elevation="2"
-      rounded="xl"
+      class="pa-4 mb-4"
+      elevation="1"
+      rounded="lg"
+      variant="outlined"
+      style="border-color: rgba(0, 0, 0, 0.2)"
     >
-      <div class="section-title" align="left">Корреляционный анализ</div>
-      <div class="section-subtitle" align="left">
-        Матрица корреляций показывает силу линейной связи между ценой и выбранными объясняющими переменными, а также между самими объясняющими переменными.
+      <div class="text-h5 font-weight-bold" align="left">Корреляционный анализ</div>
+      <div class="text-body-2 text-grey-darken-1 mt-1" align="left">
+        Матрица корреляций показывает силу линейной связи между ценой и выбранными объясняющими переменными.
       </div>
 
       <div class="correlation-scroll mt-4">
-        <v-table class="correlation-table">
+        <v-table class="text-center">
           <thead>
             <tr>
-              <th>Переменная</th>
-              <th v-for="header in correlationMatrix.headers" :key="header">{{ header }}</th>
+              <th class="text-left font-weight-bold">Переменная</th>
+              <th v-for="header in correlationMatrix.headers" :key="header" class="font-weight-bold">{{ header }}</th>
             </tr>
           </thead>
-
           <tbody>
             <tr v-for="row in correlationMatrix.rows" :key="row.label">
-              <td class="font-weight-bold">{{ row.label }}</td>
-              <td
-                v-for="cell in row.values"
-                :key="cell.key"
-                :style="getCorrelationCellStyle(cell.value)"
-              >
+              <td class="text-left font-weight-bold">{{ row.label }}</td>
+              <td v-for="cell in row.values" :key="cell.key" :style="getCorrelationCellStyle(cell.value)">
                 {{ formatCorrelation(cell.value) }}
               </td>
             </tr>
@@ -255,83 +245,80 @@
       </div>
     </v-card>
 
+    <!-- Блок 4: Результат -->
     <v-card
       v-if="forecast"
-      class="section-card pa-5 mb-4"
-      elevation="2"
-      rounded="xl"
+      class="pa-4 mb-4"
+      elevation="1"
+      rounded="lg"
+      variant="outlined"
+      style="border-color: rgba(0, 0, 0, 0.2)"
     >
       <div class="d-flex align-center justify-space-between">
         <div>
-          <div class="section-title" align="left">Результат моделирования</div>
-          <div class="section-subtitle" align="left">
-            Модель строится как множественная линейная регрессия. Обучение выполняется на 80% наблюдений,
-            проверка качества - на оставшихся 20%.
+          <div class="text-h5 font-weight-bold" align="left">Результат моделирования</div>
+          <div class="text-body-2 text-grey-darken-1 mt-1" align="left">
+            Модель строится как множественная линейная регрессия. Обучение 80%, проверка 20%.
           </div>
         </div>
-
-        <v-chip :color="forecast.qualityColor" variant="flat" class="font-weight-bold quality-chip">
+        <v-chip :color="forecast.qualityColor" variant="flat" class="font-weight-bold">
           {{ forecast.qualityLabel }}
         </v-chip>
       </div>
 
-      <v-table class="mt-4 data-table-clean">
+      <v-table class="mt-4">
         <tbody>
-          <tr><td>Метод</td><td>МНК / OLS, множественная линейная регрессия</td></tr>
-          <tr><td>Регион</td><td>{{ selectedRegion }}</td></tr>
-          <tr><td>Целевая переменная</td><td>{{ targetVariable }}</td></tr>
-          <tr><td>Использованные факторы</td><td>{{ forecast.usedFactors.join(', ') }}</td></tr>
-          <tr><td>Объём обучающей выборки</td><td>{{ forecast.trainCount }}</td></tr>
-          <tr><td>Объём тестовой выборки</td><td>{{ forecast.testCount }}</td></tr>
-          <tr><td>R² на тестовой выборке</td><td>{{ formatNumber(forecast.r2, 4) }}</td></tr>
-          <tr><td>MAE</td><td>{{ formatNumber(forecast.mae) }} руб./МВт·ч</td></tr>
-          <tr><td>RMSE</td><td>{{ formatNumber(forecast.rmse) }} руб./МВт·ч</td></tr>
-          <tr><td>Средняя прогнозируемая цена на тестовом периоде</td><td>{{ formatNumber(forecast.avgPredictedPrice) }} руб./МВт·ч</td></tr>
+          <tr><td class="font-weight-bold" style="width: 45%">Метод</td><td>МНК / OLS, множественная линейная регрессия</td></tr>
+          <tr><td class="font-weight-bold">Регион</td><td>{{ selectedRegion }}</td></tr>
+          <tr><td class="font-weight-bold">Целевая переменная</td><td>{{ targetVariable }}</td></tr>
+          <tr><td class="font-weight-bold">Использованные факторы</td><td>{{ forecast.usedFactors.join(', ') }}</td></tr>
+          <tr><td class="font-weight-bold">Объём обучающей выборки</td><td>{{ forecast.trainCount }}</td></tr>
+          <tr><td class="font-weight-bold">Объём тестовой выборки</td><td>{{ forecast.testCount }}</td></tr>
+          <tr><td class="font-weight-bold">R² на тестовой выборке</td><td>{{ formatNumber(forecast.r2, 4) }}</td></tr>
+          <tr><td class="font-weight-bold">MAE</td><td>{{ formatNumber(forecast.mae) }} руб./МВт·ч</td></tr>
+          <tr><td class="font-weight-bold">RMSE</td><td>{{ formatNumber(forecast.rmse) }} руб./МВт·ч</td></tr>
+          <tr><td class="font-weight-bold">Средняя прогнозируемая цена</td><td>{{ formatNumber(forecast.avgPredictedPrice) }} руб./МВт·ч</td></tr>
         </tbody>
       </v-table>
 
       <v-alert v-if="forecast.r2 < 0" type="warning" variant="tonal" class="mt-4">
-        Значение R² ниже нуля означает, что на выбранном периоде модель уступает базовому прогнозу по среднему значению.
-        Для повышения качества прогноза рекомендуется выбрать больший период или расширить набор факторов.
+        Значение R² ниже нуля означает, что модель уступает базовому прогнозу по среднему.
       </v-alert>
-
       <v-alert v-if="forecast.skippedFactors.length" type="warning" variant="tonal" class="mt-4">
-        Следующие выбранные факторы отсутствуют в текущих данных и не были использованы:
-        {{ forecast.skippedFactors.join(', ') }}.
+        Следующие факторы отсутствуют и не были использованы: {{ forecast.skippedFactors.join(', ') }}.
       </v-alert>
     </v-card>
 
+    <!-- Блок 5: График -->
     <v-card
       v-if="forecastChartRows.length"
-      class="section-card pa-5 mb-4"
-      elevation="2"
-      rounded="xl"
+      class="pa-4 mb-4"
+      elevation="1"
+      rounded="lg"
+      variant="outlined"
+      style="border-color: rgba(0, 0, 0, 0.2)"
     >
-      <div class="section-title" align="left">График фактической и прогнозной цены</div>
-      <div class="section-subtitle" align="left">
+      <div class="text-h5 font-weight-bold" align="left">График фактической и прогнозной цены</div>
+      <div class="text-body-2 text-grey-darken-1 mt-1 mb-4" align="left">
         Сравнение фактической и прогнозной цены по часам тестового периода.
       </div>
-
-      <VChart
-        :option="forecastChartOption"
-        class="mt-4 chart-frame"
-        style="height: 420px;"
-      />
+      <VChart :option="forecastChartOption" style="height: 420px; border: 1px solid rgba(0,0,0,0.2);" />
     </v-card>
 
+    <!-- Блок 6: Таблица прогноза -->
     <v-card
       v-if="hourlyForecastRows.length"
-      class="section-card pa-5 mb-4"
-      elevation="2"
-      rounded="xl"
+      class="pa-4 mb-4"
+      elevation="1"
+      rounded="lg"
+      variant="outlined"
+      style="border-color: rgba(0, 0, 0, 0.2)"
     >
-      <div class="section-title" align="left">Почасовой прогноз</div>
-      <div class="section-subtitle" align="left">
-        Прогноз построен для каждого часа тестового периода. В таблице показаны фактическая и прогнозная цены.
+      <div class="text-h5 font-weight-bold" align="left">Почасовой прогноз</div>
+      <div class="text-body-2 text-grey-darken-1 mt-1 mb-4" align="left">
+        Прогноз построен для каждого часа тестового периода.
       </div>
-
       <v-data-table
-        class="mt-4 data-table-clean"
         :headers="hourlyForecastHeaders"
         :items="hourlyForecastRows"
         density="comfortable"
@@ -1210,123 +1197,15 @@ export default {
 </script>
 
 <style scoped>
-.price-page {
-  background: transparent; 
-}
-
-.section-card {
-  border: 1px solid rgba(23, 43, 77, 0.14);
-  box-shadow: none !important; 
-  overflow: hidden;
-}
-
-.page-title {
-  font-size: 26px;
-  line-height: 1.25;
-  font-weight: 800;
-  color: #263238;
-  letter-spacing: 0.2px;
-}
-
-.page-subtitle,
-.section-subtitle {
-  color: #6b7280;
-  font-size: 14px;
-  line-height: 1.55;
-}
-
-.section-title {
-  font-size: 22px;
-  line-height: 1.25;
-  font-weight: 800;
-  color: #263238;
-  letter-spacing: 0.15px;
-}
-
-.small-title {
-  font-size: 18px;
-}
-
-.factors-card {
-  background: #fbfcfd;
-  border-color: rgba(23, 43, 77, 0.14) !important;
-}
-
-.soft-chip,
-.quality-chip {
-  border-radius: 999px;
-  letter-spacing: 0.2px;
-}
-
-.action-btn {
-  border-radius: 8px;
-  font-weight: 800;
-  letter-spacing: 1px;
-  box-shadow: 0 3px 10px rgba(23, 43, 77, 0.14);
-}
-
-.status-alert {
-  border-radius: 12px;
-  border: 1px solid rgba(23, 43, 77, 0.08);
-}
-
-.chart-frame {
-  border: 1px solid rgba(23, 43, 77, 0.14);
-  border-radius: 14px;
-  padding: 10px;
-  background: #ffffff;
-}
-
 .correlation-scroll {
   overflow-x: auto;
-  border: 1px solid rgba(23, 43, 77, 0.10);
-  border-radius: 14px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
   background: #ffffff;
 }
 
-.correlation-table th,
-.correlation-table td {
-  text-align: center;
-  padding: 12px 14px;
-  white-space: nowrap;
-}
-
-.correlation-table td:first-child {
-  text-align: left;
-  font-weight: 700;
-  color: #263238;
-}
-
-.data-table-clean {
-  border: 1px solid rgba(23, 43, 77, 0.10);
-  border-radius: 14px;
-  overflow: hidden;
-}
-
-.data-table-clean td:first-child {
-  font-weight: 700;
-  color: #263238;
-  width: 45%;
-}
-
-.data-table-clean td {
-  padding: 12px 18px;
-}
-.describe-table th,
-.describe-table td {
-  padding: 10px 12px;
-  white-space: nowrap;
-}
-
-.describe-table th:first-child,
-.describe-table td:first-child {
-  width: auto;
-  text-align: left;
-}
-
-.describe-table th:not(:first-child),
-.describe-table td:not(:first-child) {
-  text-align: right;
+.correlation-scroll :deep(.v-table) {
+  border: none;
 }
 
 :deep(.v-field) {
@@ -1335,9 +1214,5 @@ export default {
 
 :deep(.v-selection-control__input) {
   transform: scale(0.95);
-}
-
-:deep(.v-data-table-footer) {
-  border-top: 1px solid rgba(23, 43, 77, 0.10);
 }
 </style>
