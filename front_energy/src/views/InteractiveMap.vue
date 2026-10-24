@@ -152,11 +152,10 @@ export default {
         series: [
           {
             type: 'pie',
-            radius: '65%',            /* Вернули классический круг */
-            center: ['50%', '55%'],   /* Вернули положение */
+            radius: '65%',            
+            center: ['50%', '55%'],   
             data: this.pieData,
             emptyCircleStyle: { color: '#e0e0e0' },
-            /* Убрали label: { show: false }, чтобы подписи вернулись */
           },
         ],
       }
@@ -188,6 +187,7 @@ export default {
         ],
       }
     },
+  }, // <--- ВОТ ЗДЕСЬ БЫЛА ПРОПУЩЕНА ЭТА ЗАКРЫВАЮЩАЯ СКОБКА
 
   watch: {
     inited(newVal) {
