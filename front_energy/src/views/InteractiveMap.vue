@@ -72,25 +72,29 @@ export default {
       prevDayLoading: state => state.prevDayLoading,
     }),
 
-    selectedRegion: {
-        get() {
-          return this.$store.state.selectedRegionBeforeConfirmed
-        },
-        set(region) {
-          // 1) регион для страницы «Информация» и других мест
-          this.$store.commit('SET_SELECTED_REGION_BEFORE_CONFIRMED', region)
-      
-          // 2) регион для InfoCard и диаграмм «за прошлые/текущие сутки»
-          this.$store.commit('SET_SELECTED_REGION_PREV', region)
-      
-          // 3) перезагружаем данные именно по этому региону
-          this.$store.dispatch('fetchLastDayBoats')
-          this.$store.dispatch('fetchPrevDayBoats')
-      
-          // 4) подсветка карты
-          this.highlightRegion(region)
-  },
+    // Массив названий регионов, по которым есть данные (белый список из Vuex)
+    availableRegions() {
+      return (this.$store.getters.staticRegions || []).map(r => r.value)
+    },
 
+    selectedRegion: {
+      get() {
+        return this.$store.state.selectedRegionBeforeConfirmed
+      },
+      set(region) {
+        // 1) регион для страницы «Информация» и других мест
+        this.$store.commit('SET_SELECTED_REGION_BEFORE_CONFIRMED', region)
+    
+        // 2) регион для InfoCard и диаграмм «за прошлые/текущие сутки»
+        this.$store.commit('SET_SELECTED_REGION_PREV', region)
+    
+        // 3) перезагружаем данные именно по этому региону
+        this.$store.dispatch('fetchLastDayBoats')
+        this.$store.dispatch('fetchPrevDayBoats')
+    
+        // 4) подсветка карты
+        this.highlightRegion(region)
+      },
     },
 
     // отфильтрованные данные для текущих суток
@@ -182,6 +186,21 @@ export default {
     },
   },
 
+  watch: {
+    // Как только Vuex загрузит список доступных регионов (inited = true),
+    // перекрашиваем карту, так как до этого момента availableRegions пустой
+    inited(newVal) {
+      if (newVal) {
+        this.$nextTick(() => {
+          this.addRegionClickHandlers()
+          if (this.selectedRegion) {
+            this.highlightRegion(this.selectedRegion)
+          }
+        })
+      }
+    }
+  },
+
   mounted() {
     this.addRegionClickHandlers()
     if (this.selectedRegion) {
@@ -192,34 +211,63 @@ export default {
   methods: {
     addRegionClickHandlers() {
       const paths = this.$refs.mapContainer.querySelectorAll('path[id]')
+      const available = this.availableRegions
+
       paths.forEach(path => {
+        const regionName = path.getAttribute('title')
+        const isAvailable = available.includes(regionName)
+
+        if (!isAvailable) {
+          // Если региона нет в staticRegions — делаем его серым и некликабельным
+          path.style.cursor = 'default'
+          path.style.fill = '#e0e0e0' // Светло-серый цвет
+          path.style.pointerEvents = 'none' // Полностью отключает клики и наведения
+          
+          path.onmouseenter = null
+          path.onmouseleave = null
+          path.onclick = null
+          return
+        }
+
+        // Настройки для доступных регионов
         path.style.cursor = 'pointer'
         path.style.fill = '#90caf9'
         path.style.transition = '0.2s ease'
+        path.style.pointerEvents = 'auto' // Включаем интерактивность
 
-        path.addEventListener('mouseenter', () => {
-          if (this.selectedRegion !== path.getAttribute('title')) {
+        path.onmouseenter = () => {
+          if (this.selectedRegion !== regionName) {
             path.style.fill = '#42a5f5'
           }
-        })
-        path.addEventListener('mouseleave', () => {
-          if (this.selectedRegion !== path.getAttribute('title')) {
+        }
+        
+        path.onmouseleave = () => {
+          if (this.selectedRegion !== regionName) {
             path.style.fill = '#90caf9'
           }
-        })
-
-        path.addEventListener('click', () => {
-          this.selectedRegion = path.getAttribute('title')
-        })
+        }
+        
+        path.onclick = () => {
+          this.selectedRegion = regionName
+        }
       })
     },
 
     highlightRegion(regionTitle) {
       const paths = this.$refs.mapContainer.querySelectorAll('path[id]')
+      const available = this.availableRegions
+
       paths.forEach(path => {
-        if (path.getAttribute('title') === regionTitle) {
+        const pathTitle = path.getAttribute('title')
+        
+        if (!available.includes(pathTitle)) {
+          // Недоступные регионы всегда остаются серыми
+          path.style.fill = '#e0e0e0'
+        } else if (pathTitle === regionTitle) {
+          // Выбранный регион
           path.style.fill = '#ef5350'
         } else {
+          // Остальные доступные регионы
           path.style.fill = '#90caf9'
         }
       })
