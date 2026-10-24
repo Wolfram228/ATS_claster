@@ -1,18 +1,16 @@
 <template>
     <v-app-bar app flat class="app-bar-clean">
-        <v-container>
-            <v-row justify="center" align="center" class="nav-row" dense>
-                <div
-                    v-for="link in links"
-                    :key="link.to"
-                    class="nav-link"
-                >
-                    <router-link :to="link.to">
-                        <v-btn class="nav-btn">{{ link.name }}</v-btn>
-                    </router-link>
-                </div>
-            </v-row>
-        </v-container>
+        <div class="nav-row">
+            <div
+                v-for="link in links"
+                :key="link.to"
+                class="nav-link"
+            >
+                <router-link :to="link.to">
+                    <v-btn class="nav-btn">{{ link.name }}</v-btn>
+                </router-link>
+            </div>
+        </div>
     </v-app-bar>
 </template>
 
@@ -47,10 +45,15 @@ export default {
     display: flex;
     flex-wrap: nowrap;
     justify-content: center;
-    /* ТОЛЬКО для адаптивности — прокрутка, остальное как было */
+    align-items: center;
+    width: 100%;
+    height: 100%;
+    padding: 0 8px;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
+    /* Гарантируем, что padding не схлопывается и прокрутка начинается с начала */
+    box-sizing: border-box;
 }
 
 .nav-row::-webkit-scrollbar {
@@ -58,8 +61,10 @@ export default {
 }
 
 .nav-link {
-    flex-shrink: 1;
+    flex-shrink: 0;
     min-width: 80px;
+    /* Небольшой отступ между кнопками, как было изначально */
+    padding: 0 2px;
 }
 
 .nav-btn {
@@ -71,11 +76,10 @@ export default {
     box-sizing: border-box;
 }
 
-/* На мобильных прижимаем влево, чтобы прокрутка работала от начала */
+/* На мобильных — прижимаем влево, но теперь прокрутка работает от самого начала */
 @media (max-width: 959px) {
     .nav-row {
         justify-content: flex-start;
-        padding: 0 8px;
     }
     .nav-link {
         flex-shrink: 0;
