@@ -159,12 +159,11 @@ export default {
               type: 'pie',
               radius: '70%',
               data: this.pieData,
-              label: { show: false },   // ← убрали мусор на сегментах
+              label: { show: false },
               labelLine: { show: false }
             }
           ]
         },
-        // Адаптивность: если ширина контейнера < 500px
         media: [
           {
             query: { maxWidth: 500 },
@@ -232,6 +231,20 @@ export default {
         ]
       }
     },
+  },
+
+  watch: {
+    inited(newVal) {
+      if (newVal) {
+        this.$nextTick(() => {
+          this.addRegionClickHandlers()
+          if (this.selectedRegion) {
+            this.highlightRegion(this.selectedRegion)
+          }
+        })
+      }
+    }
+  },
 
   mounted() {
     this.addRegionClickHandlers()
