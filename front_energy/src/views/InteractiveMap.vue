@@ -42,11 +42,11 @@
 
           <template v-else>
             <div class="chart-box">
-              <VChart :option="pieOptions" autoresize class="chart-fill" />
+              <VChart :option="" autoresize class="chart-fill" />
             </div>
 
             <div v-if="!prevDayLoading" class="chart-box">
-              <VChart :option="pieOptionsPrev" autoresize class="chart-fill" />
+              <VChart :option="Prev" autoresize class="chart-fill" />
             </div>
           </template>
         </template>
@@ -134,60 +134,61 @@ export default {
       }))
     },
 
-    pieOptions() {
+   pieOptions() {
       return {
         title: {
-          text: 'Динамика потребления за текущие сутки',
+          text: 'Текущие сутки',
           left: 'center',
-          textStyle: { fontSize: 14, fontWeight: 600 },
+          top: 0,
+          textStyle: { fontSize: 12, fontWeight: 600 }, // Уменьшили шрифт
         },
-        tooltip: {
-          trigger: 'item',
-          formatter: params => {
-            const value = Number(params.value)
-            return `${params.marker} ${params.name}: ${value.toFixed(2)} МВт·ч (${params.percent}%)`
-          },
+        tooltip: { trigger: 'item' },
+        // Настроили легенду: она будет скроллиться, если не влезает, и шрифт меньше
+        legend: { 
+          type: 'scroll', 
+          bottom: 0, 
+          textStyle: { fontSize: 11 },
+          itemWidth: 10,
+          itemHeight: 10
         },
-        legend: { bottom: 0 },
         series: [
           {
             type: 'pie',
-            radius: '65%',
-            center: ['50%', '55%'],
+            radius: ['35%', '60%'], // Сделали "бубликом", чтобы было место для легенды
+            center: ['50%', '50%'],
             data: this.pieData,
-            emptyCircleStyle: { color: '#e0e0e0' },
+            label: { show: false }, // Скрыли подписи на самих кусках (они мешают на телефоне)
           },
         ],
       }
     },
-
     pieOptionsPrev() {
       return {
         title: {
-          text: 'Динамика потребления за предыдущие сутки',
+          text: 'Предыдущие сутки',
           left: 'center',
-          textStyle: { fontSize: 14, fontWeight: 600 },
+          top: 0,
+          textStyle: { fontSize: 12, fontWeight: 600 },
         },
-        tooltip: {
-          trigger: 'item',
-          formatter: params => {
-            const value = Number(params.value)
-            return `${params.marker} ${params.name}: ${value.toFixed(2)} МВт·ч (${params.percent}%)`
-          },
+        tooltip: { trigger: 'item' },
+        legend: { 
+          type: 'scroll', 
+          bottom: 0, 
+          textStyle: { fontSize: 11 },
+          itemWidth: 10,
+          itemHeight: 10
         },
-        legend: { bottom: 0 },
         series: [
           {
             type: 'pie',
-            radius: '65%',
-            center: ['50%', '55%'],
+            radius: ['35%', '60%'],
+            center: ['50%', '50%'],
             data: this.pieDataPrev,
-            emptyCircleStyle: { color: '#e0e0e0' },
+            label: { show: false },
           },
         ],
       }
     },
-  },
 
   watch: {
     inited(newVal) {
@@ -273,24 +274,20 @@ export default {
 </script>
 
 <style scoped>
-/* ---------- СТРАНИЦА ---------- */
 .map-page {
   display: flex;
   flex-direction: column;
   min-height: calc(100vh - 64px);
-  /* dvh лучше на мобильных: учитывает скрытие адресной строки */
   min-height: calc(100dvh - 64px);
   background: #ffffff;
-  /* Убрали overflow: hidden — пусть страница прокручивается, если контент не влез */
 }
 
-/* ---------- РЯД КАРТА + ДИАГРАММЫ ---------- */
 .content-row {
   flex: 1 1 auto;
-  min-height: 0; /* разрешаем сжатие */
+  min-height: 0;
 }
 
-/* ---------- КАРТА ---------- */
+/* --- КАРТА --- */
 .map-col {
   display: flex;
   align-items: stretch;
@@ -304,23 +301,23 @@ export default {
 .map-wrapper {
   flex: 1 1 auto;
   display: flex;
-  align-items: center;
-  justify-content: center;
   width: 100%;
   height: 100%;
   padding: 8px;
   min-height: 0;
 }
 
+/* Настройки SVG карты */
 .map-wrapper svg {
   max-width: 100%;
   max-height: 100%;
   width: auto;
   height: auto;
   display: block;
+  margin: auto; /* Центрируем на десктопе */
 }
 
-/* ---------- ДИАГРАММЫ ---------- */
+/* --- ДИАГРАММЫ --- */
 .charts-col {
   display: flex;
   flex-direction: column;
@@ -329,7 +326,7 @@ export default {
 
 .chart-box {
   flex: 1 1 0;
-  min-height: 220px; /* ниже этого график становится нечитаемым */
+  min-height: 250px;
   background: #ffffff;
   border-radius: 8px;
   border: 1px solid rgba(0, 0, 0, 0.1);
@@ -355,47 +352,49 @@ export default {
   border: 1px solid rgba(0, 0, 0, 0.1);
 }
 
-/* ---------- ПЛАНШЕТЫ И ДЕСКТОП (md и выше) ---------- */
+/* --- ДЕСКТОП (от 960px) --- */
 @media (min-width: 960px) {
   .content-row {
-    /* Гарантируем достаточную высоту, но не даём разъехаться за экран */
-    min-height: 480px;
-    max-height: calc(100vh - 260px); /* 64 app-bar + 32 pa-4 + ~150 header + mb-4 */
-  }
-
-  /* .map-col по умолчанию растягивается на 100% .content-row через v-row */
-}
-
-/* ---------- НОУТБУКИ / БОЛЬШИЕ ЭКРАНЫ (lg и выше) ---------- */
-@media (min-width: 1280px) {
-  .content-row {
-    min-height: 560px;
+    min-height: 500px;
+    max-height: calc(100vh - 220px); /* Ограничиваем высоту, чтобы не растягивалось */
   }
 }
 
-/* ---------- МОБИЛЬНЫЕ / ПЛАНШЕТЫ (sm, xs) ---------- */
+/* --- МОБИЛЬНЫЕ (до 959px) --- */
 @media (max-width: 959px) {
   .map-page {
-    min-height: 0; /* на мобильных пусть страница просто прокручивается */
+    min-height: 0;
   }
 
-  /* Карта и диаграммы складываются друг под друга */
   .map-col {
     margin-bottom: 16px;
-    /* Фиксированная aspect-ratio вместо min-height: карта не схлопнется и не растянется */
-    aspect-ratio: 16 / 10;
-    max-height: 55vh;
+    height: 350px; /* Фиксированная высота на телефоне */
+    overflow: hidden; /* Прячем то, что не влезло */
+  }
+
+  .map-wrapper {
+    /* Включаем скролл/свайп внутри карты! */
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+    justify-content: flex-start;
+    align-items: flex-start;
+  }
+
+  .map-wrapper svg {
+    /* Заставляем карту быть больше, чтобы её можно было рассматривать свайпами */
+    min-width: 700px; 
+    width: 700px;
+    max-height: none;
+    margin: 0;
   }
 
   .charts-col {
     height: auto;
   }
 
-  /* На мобильных у каждой диаграммы фиксированная высота */
   .chart-box {
     flex: none;
     height: 300px;
-    min-height: 0;
   }
 
   .chart-placeholder {
