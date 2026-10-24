@@ -279,7 +279,7 @@ export default {
   flex-direction: column;
   height: calc(100vh - 64px);
   box-sizing: border-box;
-  background-color: #fafbfc; /* Легкий фон, как у других страниц */
+
 }
 
 /* Ряд с картой и диаграммами занимает всё оставшееся место */
