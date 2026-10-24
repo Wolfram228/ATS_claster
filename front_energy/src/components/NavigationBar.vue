@@ -1,17 +1,17 @@
 <template>
     <v-app-bar app flat class="app-bar-clean">
-        <v-container>
-            <v-row justify="center" align="center" class="nav-row" dense>
-                <div
+        <v-container class="px-0">
+            <!-- Убрали justify="center", чтобы при переполнении скролл начинался слева -->
+            <div class="nav-scroll-container">
+                <router-link
                     v-for="link in links"
                     :key="link.to"
+                    :to="link.to"
                     class="nav-link"
                 >
-                    <router-link :to="link.to">
-                        <v-btn class="nav-btn">{{ link.name }}</v-btn>
-                    </router-link>
-                </div>
-            </v-row>
+                    <v-btn class="nav-btn" variant="text">{{ link.name }}</v-btn>
+                </router-link>
+            </div>
         </v-container>
     </v-app-bar>
 </template>
@@ -39,27 +39,47 @@ export default {
     border-bottom: none !important;
 }
 
-.router-link-active {
-    color: rgb(6, 4, 119);
+/* Контейнер для свайпа */
+.nav-scroll-container {
+    display: flex;
+    align-items: center;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch; /* Плавный скролл на iOS */
+    scrollbar-width: none; /* Скрываем скроллбар в Firefox */
+    justify-content: flex-start;
+    padding: 0 8px;
 }
 
-.nav-row {
-    display: flex;
-    flex-wrap: nowrap;
-    justify-content: center;
+/* Скрываем скроллбар в Chrome/Safari */
+.nav-scroll-container::-webkit-scrollbar {
+    display: none;
+}
+
+/* На десктопе центрируем */
+@media (min-width: 960px) {
+    .nav-scroll-container {
+        justify-content: center;
+        padding: 0;
+    }
 }
 
 .nav-link {
-    flex-shrink: 1;
-    min-width: 80px;
+    flex-shrink: 0; /* Запрещаем сжимать кнопки */
+    text-decoration: none;
 }
 
 .nav-btn {
     white-space: nowrap;
-    padding-left: 8px;
-    padding-right: 8px;
-    font-size: 14px;
-    width: 100%;
-    box-sizing: border-box;
+    font-size: 13px;
+    padding: 0 12px;
+    text-transform: none;
+    font-weight: 500;
+    color: #444;
+}
+
+.router-link-active .nav-btn {
+    color: rgb(6, 4, 119);
+    font-weight: 700;
+    background: rgba(6, 4, 119, 0.05);
 }
 </style>
