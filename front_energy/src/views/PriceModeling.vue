@@ -1,5 +1,5 @@
 <template>
-  <v-container fluid class="price-page pa-4">
+  <v-container class="price-page pa-4">
     <v-card
       class="section-card pa-5 mb-4"
       elevation="2"
