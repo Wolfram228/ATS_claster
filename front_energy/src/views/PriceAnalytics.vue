@@ -1,5 +1,5 @@
 <template>
-    <v-container fluid class="pa-4">
+    <v-container class="pa-4">
         <v-card
             class="pa-4 mb-4"
             elevation="1"
