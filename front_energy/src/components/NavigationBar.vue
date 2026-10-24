@@ -1,7 +1,7 @@
 <template>
     <v-app-bar app flat class="app-bar-clean">
-        <v-container class="px-0 px-md-4">
-            <div class="nav-scroll-container">
+        <v-container>
+            <v-row justify="center" align="center" class="nav-row" dense>
                 <div
                     v-for="link in links"
                     :key="link.to"
@@ -11,7 +11,7 @@
                         <v-btn class="nav-btn">{{ link.name }}</v-btn>
                     </router-link>
                 </div>
-            </div>
+            </v-row>
         </v-container>
     </v-app-bar>
 </template>
@@ -43,35 +43,25 @@ export default {
     color: rgb(6, 4, 119);
 }
 
-/* Контейнер для свайпа */
-.nav-scroll-container {
+.nav-row {
     display: flex;
-    align-items: center;
+    flex-wrap: nowrap;
+    justify-content: center;
+    /* ТОЛЬКО для адаптивности — прокрутка, остальное как было */
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
-    scrollbar-width: none; 
-    justify-content: center; /* По центру на десктопе */
-    padding: 8px 0;
+    scrollbar-width: none;
 }
 
-.nav-scroll-container::-webkit-scrollbar {
+.nav-row::-webkit-scrollbar {
     display: none;
 }
 
-/* На мобильных прижимаем влево для удобного свайпа */
-@media (max-width: 959px) {
-    .nav-scroll-container {
-        justify-content: flex-start;
-        padding: 8px 16px;
-    }
-}
-
 .nav-link {
-    flex-shrink: 0;
-    margin: 0 2px;
+    flex-shrink: 1;
+    min-width: 80px;
 }
 
-/* Твои старые стили кнопок */
 .nav-btn {
     white-space: nowrap;
     padding-left: 8px;
@@ -79,10 +69,16 @@ export default {
     font-size: 14px;
     width: 100%;
     box-sizing: border-box;
-    text-transform: none;
 }
 
-.router-link-active .nav-btn {
-    font-weight: 700;
+/* На мобильных прижимаем влево, чтобы прокрутка работала от начала */
+@media (max-width: 959px) {
+    .nav-row {
+        justify-content: flex-start;
+        padding: 0 8px;
+    }
+    .nav-link {
+        flex-shrink: 0;
+    }
 }
 </style>
