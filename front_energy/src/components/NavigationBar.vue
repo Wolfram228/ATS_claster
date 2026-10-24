@@ -1,16 +1,18 @@
 <template>
     <v-app-bar app flat class="app-bar-clean">
-        <v-container class="px-0">
-            <!-- Убрали justify="center", чтобы при переполнении скролл начинался слева -->
+        <v-container class="px-0 px-md-4">
+            <!-- Обертка для скролла -->
             <div class="nav-scroll-container">
-                <router-link
+                <div
                     v-for="link in links"
                     :key="link.to"
-                    :to="link.to"
                     class="nav-link"
                 >
-                    <v-btn class="nav-btn" variant="text">{{ link.name }}</v-btn>
-                </router-link>
+                    <router-link :to="link.to">
+                        <!-- Вернули стандартный вид кнопки -->
+                        <v-btn class="nav-btn">{{ link.name }}</v-btn>
+                    </router-link>
+                </div>
             </div>
         </v-container>
     </v-app-bar>
@@ -44,42 +46,42 @@ export default {
     display: flex;
     align-items: center;
     overflow-x: auto;
-    -webkit-overflow-scrolling: touch; /* Плавный скролл на iOS */
-    scrollbar-width: none; /* Скрываем скроллбар в Firefox */
-    justify-content: flex-start;
-    padding: 0 8px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none; 
+    justify-content: center; /* По центру на десктопе */
+    padding: 8px 0;
 }
 
-/* Скрываем скроллбар в Chrome/Safari */
+/* Скрываем скроллбар */
 .nav-scroll-container::-webkit-scrollbar {
     display: none;
 }
 
-/* На десктопе центрируем */
-@media (min-width: 960px) {
+/* На мобильных прижимаем влево, чтобы можно было скроллить от начала */
+@media (max-width: 959px) {
     .nav-scroll-container {
-        justify-content: center;
-        padding: 0;
+        justify-content: flex-start;
+        padding: 8px 16px;
     }
 }
 
 .nav-link {
-    flex-shrink: 0; /* Запрещаем сжимать кнопки */
-    text-decoration: none;
+    flex-shrink: 0;
+    margin: 0 2px; /* Небольшой отступ между кнопками */
 }
 
+/* Оригинальные стили кнопок */
 .nav-btn {
     white-space: nowrap;
-    font-size: 13px;
-    padding: 0 12px;
-    text-transform: none;
-    font-weight: 500;
-    color: #444;
+    padding-left: 8px;
+    padding-right: 8px;
+    font-size: 14px;
+    text-transform: none; /* Убираем CAPS LOCK у Vuetify по умолчанию */
 }
 
+/* Подсветка активной вкладки */
 .router-link-active .nav-btn {
     color: rgb(6, 4, 119);
     font-weight: 700;
-    background: rgba(6, 4, 119, 0.05);
 }
 </style>
