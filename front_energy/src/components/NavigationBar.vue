@@ -1,7 +1,6 @@
 <template>
     <v-app-bar app flat class="app-bar-clean">
         <v-container class="px-0 px-md-4">
-            <!-- Обертка для скролла -->
             <div class="nav-scroll-container">
                 <div
                     v-for="link in links"
@@ -9,7 +8,6 @@
                     class="nav-link"
                 >
                     <router-link :to="link.to">
-                        <!-- Вернули стандартный вид кнопки -->
                         <v-btn class="nav-btn">{{ link.name }}</v-btn>
                     </router-link>
                 </div>
@@ -41,6 +39,10 @@ export default {
     border-bottom: none !important;
 }
 
+.router-link-active {
+    color: rgb(6, 4, 119);
+}
+
 /* Контейнер для свайпа */
 .nav-scroll-container {
     display: flex;
@@ -52,12 +54,11 @@ export default {
     padding: 8px 0;
 }
 
-/* Скрываем скроллбар */
 .nav-scroll-container::-webkit-scrollbar {
     display: none;
 }
 
-/* На мобильных прижимаем влево, чтобы можно было скроллить от начала */
+/* На мобильных прижимаем влево для удобного свайпа */
 @media (max-width: 959px) {
     .nav-scroll-container {
         justify-content: flex-start;
@@ -67,21 +68,21 @@ export default {
 
 .nav-link {
     flex-shrink: 0;
-    margin: 0 2px; /* Небольшой отступ между кнопками */
+    margin: 0 2px;
 }
 
-/* Оригинальные стили кнопок */
+/* Твои старые стили кнопок */
 .nav-btn {
     white-space: nowrap;
     padding-left: 8px;
     padding-right: 8px;
     font-size: 14px;
-    text-transform: none; /* Убираем CAPS LOCK у Vuetify по умолчанию */
+    width: 100%;
+    box-sizing: border-box;
+    text-transform: none;
 }
 
-/* Подсветка активной вкладки */
 .router-link-active .nav-btn {
-    color: rgb(6, 4, 119);
     font-weight: 700;
 }
 </style>
