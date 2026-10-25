@@ -1,5 +1,5 @@
 <template>
-  <div class="home">
+  <v-container class="home">
     <!-- Блок 1. О проекте -->
     <section class="hero">
       <img :src="img2" alt="Ветроэнергетические установки" class="hero__img" />
@@ -47,7 +47,7 @@
         <img :src="m.img" :alt="m.alt" />
       </div>
     </section>
-  </div>
+  </v-container>
 </template>
 
 <script>
@@ -116,11 +116,10 @@ export default {
 </script>
 
 <style scoped>
+/* Контейнер страницы: ширину, отступы по бокам и центрирование
+   теперь регулирует v-container. Здесь оставляем только визуальный стиль. */
 .home {
-  width: 100%;
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 32px 24px 120px;
+  padding-bottom: 80px;
   box-sizing: border-box;
   text-align: left;
   color: #0e0e0e;
@@ -287,7 +286,7 @@ export default {
   .hero__bottom { flex-direction: column; align-items: flex-start; }
 }
 @media (max-width: 700px) {
-  .home { padding: 16px 12px 80px; }
+  .home { padding-bottom: 60px; }
   .hero, .hero__inner { min-height: 560px; border-radius: 28px; }
   .hero__inner { padding: 24px 22px 28px; }
   .module__media { border-radius: 24px; }
