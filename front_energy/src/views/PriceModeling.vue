@@ -835,7 +835,7 @@ export default {
             }
 
             // Строим оба прогноза
-            const arResult = this.(rows)
+            const arResult = this.buildAutoRegressiveForecast(rows)
             const olsResult = this.buildExogenousForecast(rows)
 
             if (arResult) {
