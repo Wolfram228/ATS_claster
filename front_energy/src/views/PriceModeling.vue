@@ -83,14 +83,14 @@
             Для более устойчивого прогноза рекомендуется выбирать период не менее 7 дней.
         </v-alert>
 
-        <!-- Блок 2: Статистика -->
+       <!-- Блок 2: Статистика -->
         <v-card v-if="statistics" class="pa-4 mb-4" elevation="1" rounded="lg" variant="outlined" style="border-color: rgba(0, 0, 0, 0.2)">
             <div class="text-h5 font-weight-bold" align="left">Описательная статистика</div>
             <div class="text-body-2 text-grey-darken-1 mt-1" align="left">Расчёт выполнен по фактическим данным для выбранного региона.</div>
             <div class="text-body-2 text-grey-darken-1 mt-1 mb-4" align="left">
                 Регион: {{ appliedRegion }} · Период: {{ formatDisplayDate(appliedDateFrom) }} — {{ formatDisplayDate(appliedDateTo) }}
             </div>
-
+        
             <div class="correlation-scroll mt-4">
                 <v-table class="text-center">
                     <thead>
@@ -113,10 +113,40 @@
                             <td v-for="variable in statistics.variables" :key="variable.key">{{ formatDescribeValue(variable.sd, 2) }}</td>
                         </tr>
                         <tr>
-                            <td class="text-left">Минимум / Максимум</td>
-                            <td v-for="variable in statistics.variables" :key="variable.key">
-                                {{ formatDescribeValue(variable.min, 2) }} / {{ formatDescribeValue(variable.max, 2) }}
-                            </td>
+                            <td class="text-left">Медиана</td>
+                            <td v-for="variable in statistics.variables" :key="variable.key">{{ formatDescribeValue(variable.median, 2) }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-left">Усечённое среднее (10 %)</td>
+                            <td v-for="variable in statistics.variables" :key="variable.key">{{ formatDescribeValue(variable.trimmed, 2) }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-left">Медианное абсолютное отклонение</td>
+                            <td v-for="variable in statistics.variables" :key="variable.key">{{ formatDescribeValue(variable.mad, 2) }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-left">Минимум</td>
+                            <td v-for="variable in statistics.variables" :key="variable.key">{{ formatDescribeValue(variable.min, 2) }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-left">Максимум</td>
+                            <td v-for="variable in statistics.variables" :key="variable.key">{{ formatDescribeValue(variable.max, 2) }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-left">Размах (max − min)</td>
+                            <td v-for="variable in statistics.variables" :key="variable.key">{{ formatDescribeValue(variable.range, 2) }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-left">Асимметрия</td>
+                            <td v-for="variable in statistics.variables" :key="variable.key">{{ formatDescribeValue(variable.skew, 3) }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-left">Эксцесс</td>
+                            <td v-for="variable in statistics.variables" :key="variable.key">{{ formatDescribeValue(variable.kurtosis, 3) }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-left">Стандартная ошибка среднего</td>
+                            <td v-for="variable in statistics.variables" :key="variable.key">{{ formatDescribeValue(variable.se, 2) }}</td>
                         </tr>
                     </tbody>
                 </v-table>
