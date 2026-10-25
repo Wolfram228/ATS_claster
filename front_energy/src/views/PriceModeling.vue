@@ -45,31 +45,21 @@
                     </v-col>
                 </v-row>
 
-                <v-row class="mt-4 align-center">
-                    <v-col cols="12" md="3">
+                <v-row class="mt-4">
+                    <v-col cols="12" md="4">
                         <v-btn block min-height="52" color="blue-grey-lighten-1" :loading="priceAnalyticsLoading || weatherLoading" :disabled="isDateInvalid" @click="loadData">
                             Загрузить данные
                         </v-btn>
                     </v-col>
-                    <v-col cols="12" md="3">
+                    <v-col cols="12" md="4">
                         <v-btn block min-height="52" color="blue-lighten-1" :loading="priceAnalyticsLoading || weatherLoading" :disabled="isDateInvalid" @click="showStatistics">
                             Показать статистику
                         </v-btn>
                     </v-col>
-                    <!-- Блок выбора метода прогноза -->
-                    <v-col cols="12" md="6">
-                        <div class="d-flex align-center">
-                            <span class="text-body-2 font-weight-bold me-2">Метод прогноза:</span>
-                            <v-btn-group density="compact" variant="outlined">
-                                <v-btn :color="forecastMethod === 'ar' ? 'green-lighten-1' : ''" @click="forecastMethod = 'ar'">Авторегрессия (AR)</v-btn>
-                                <v-btn :color="forecastMethod === 'ols' ? 'green-lighten-1' : ''" @click="forecastMethod = 'ols'">Мультифакторный (OLS)</v-btn>
-                            </v-btn-group>
-                        </div>
-                        <div class="mt-2 d-flex">
-                            <v-btn block min-height="52" color="green-lighten-1" :loading="priceAnalyticsLoading || weatherLoading" :disabled="isDateInvalid" @click="buildForecast">
-                                Построить прогноз
-                            </v-btn>
-                        </div>
+                    <v-col cols="12" md="4">
+                        <v-btn block min-height="52" color="green-lighten-1" :loading="priceAnalyticsLoading || weatherLoading" :disabled="isDateInvalid" @click="buildForecast">
+                            Построить прогноз (оба метода)
+                        </v-btn>
                     </v-col>
                 </v-row>
 
@@ -161,11 +151,10 @@
         </v-card>
 
         <!-- Блок 4: Результат прогноза -->
-        <v-card v-if="forecast" class="pa-4 mb-4" elevation="1" rounded="lg" variant="outlined" style="border-color: rgba(0, 0, 0, 0.2)">
-            <div class="d-flex align-center justify-space-between flex-wrap">
-                <div class="d-flex align-center flex-wrap mb-2">
+        <v-card v-if="currentForecast" class="pa-4 mb-4" elevation="1" rounded="lg" variant="outlined" style="border-color: rgba(0, 0, 0, 0.2)">
+            <div class="d-flex align-center justify-space-between flex-wrap mb-4">
+                <div class="d-flex align-center flex-wrap">
                     <div class="text-h5 font-weight-bold me-2" align="left">Результат моделирования</div>
-                    <!-- Подсказка с адаптивным дизайном -->
                     <div class="d-flex align-center flex-shrink-0">
                         <HintFormula>
                             <div style="font-size: 13px; text-align: left; min-width: 200px;">
@@ -175,13 +164,16 @@
                         </HintFormula>
                     </div>
                 </div>
-                <v-chip v-if="forecast.qualityColor" :color="forecast.qualityColor" variant="flat" class="font-weight-bold mb-2">
-                    {{ forecast.qualityLabel }}
-                </v-chip>
+                
+                <!-- Переключатель методов прямо в блоке результата -->
+                <v-btn-group density="compact" variant="outlined">
+                    <v-btn :color="selectedForecastView === 'ar' ? 'green-lighten-1' : ''" @click="selectedForecastView = 'ar'">Авторегрессия (AR)</v-btn>
+                    <v-btn :color="selectedForecastView === 'ols' ? 'green-lighten-1' : ''" @click="selectedForecastView = 'ols'">Мультифакторный (OLS)</v-btn>
+                </v-btn-group>
             </div>
             
             <div class="text-body-2 text-grey-darken-1 mt-1" align="left">
-                Метод: {{ forecastMethod === 'ar' ? 'Авторегрессия' : 'Множественная линейная регрессия (OLS)' }}.
+                Метод: {{ selectedForecastView === 'ar' ? 'Авторегрессия' : 'Множественная линейная регрессия (OLS)' }}.
                 Прогноз на {{ forecastHorizon }} часов вперёд.
             </div>
 
@@ -189,21 +181,21 @@
                 <tbody>
                     <tr><td class="font-weight-bold" style="width: 45%">Регион</td><td>{{ selectedRegion }}</td></tr>
                     <tr><td class="font-weight-bold">Целевая переменная</td><td>{{ targetVariable }}</td></tr>
-                    <tr v-if="forecast.usedFactors"><td class="font-weight-bold">Использованные факторы</td><td>{{ forecast.usedFactors.join(', ') }}</td></tr>
-                    <tr><td class="font-weight-bold">Исторических данных (часов)</td><td>{{ forecast.trainCount }}</td></tr>
+                    <tr v-if="currentForecast.usedFactors"><td class="font-weight-bold">Использованные факторы</td><td>{{ currentForecast.usedFactors.join(', ') }}</td></tr>
+                    <tr><td class="font-weight-bold">Исторических данных (часов)</td><td>{{ currentForecast.trainCount }}</td></tr>
                     <tr><td class="font-weight-bold">Горизонт прогноза (часов)</td><td>{{ forecastHorizon }}</td></tr>
-                    <tr><td class="font-weight-bold">R² на исторических данных</td><td>{{ formatNumber(forecast.r2, 4) }}</td></tr>
-                    <tr><td class="font-weight-bold">Средняя прогнозируемая цена</td><td>{{ formatNumber(forecast.avgPredictedPrice) }} руб./МВт·ч</td></tr>
+                    <tr><td class="font-weight-bold">R² на исторических данных</td><td>{{ formatNumber(currentForecast.r2, 4) }}</td></tr>
+                    <tr><td class="font-weight-bold">Средняя прогнозируемая цена</td><td>{{ formatNumber(currentForecast.avgPredictedPrice) }} руб./МВт·ч</td></tr>
                 </tbody>
             </v-table>
 
-            <v-alert v-if="forecast.skippedFactors && forecast.skippedFactors.length" type="warning" variant="tonal" class="mt-4">
-                Следующие факторы отсутствуют и не были использованы: {{ forecast.skippedFactors.join(', ') }}.
+            <v-alert v-if="currentForecast.skippedFactors && currentForecast.skippedFactors.length" type="warning" variant="tonal" class="mt-4">
+                Следующие факторы отсутствуют и не были использованы: {{ currentForecast.skippedFactors.join(', ') }}.
             </v-alert>
         </v-card>
 
         <!-- Блок 5: График -->
-        <v-card v-if="forecastChartRows.length" class="pa-4 mb-4" elevation="1" rounded="lg" variant="outlined" style="border-color: rgba(0, 0, 0, 0.2)">
+        <v-card v-if="currentChartRows.length" class="pa-4 mb-4" elevation="1" rounded="lg" variant="outlined" style="border-color: rgba(0, 0, 0, 0.2)">
             <div class="text-h5 font-weight-bold" align="left">График фактической и прогнозной цены</div>
             <div class="text-body-2 text-grey-darken-1 mt-1 mb-4" align="left">
                 Сравнение фактической и прогнозной цены. Прогноз начинается после последней фактической точки.
@@ -212,12 +204,12 @@
         </v-card>
 
         <!-- Блок 6: Таблица прогноза -->
-        <v-card v-if="hourlyForecastRows.length" class="pa-4 mb-4" elevation="1" rounded="lg" variant="outlined" style="border-color: rgba(0, 0, 0, 0.2)">
+        <v-card v-if="currentHourlyRows.length" class="pa-4 mb-4" elevation="1" rounded="lg" variant="outlined" style="border-color: rgba(0, 0, 0, 0.2)">
             <div class="text-h5 font-weight-bold" align="left">Почасовой прогноз</div>
             <div class="text-body-2 text-grey-darken-1 mt-1 mb-4" align="left">
                 Прогноз построен для каждого часа на {{ forecastHorizon }} часов вперёд.
             </div>
-            <v-data-table :headers="hourlyForecastHeaders" :items="hourlyForecastRows" density="comfortable" items-per-page="24" />
+            <v-data-table :headers="hourlyForecastHeaders" :items="currentHourlyRows" density="comfortable" items-per-page="24" />
         </v-card>
     </v-container>
 </template>
@@ -226,7 +218,77 @@
 import { mapState, mapGetters, mapActions } from 'vuex'
 import HintFormula from '../components/HintFormula.vue'
 
-const REGION_COORDINATES = { /* ... (оставь свой словарь координат без изменений) ... */ }
+const REGION_COORDINATES = {
+  'Алтайский край': { latitude: 53.35, longitude: 83.76 },
+  'Архангельская область': { latitude: 64.54, longitude: 40.52 },
+  'Астраханская область': { latitude: 46.35, longitude: 48.04 },
+  'Белгородская область': { latitude: 50.60, longitude: 36.59 },
+  'Брянская область': { latitude: 53.25, longitude: 34.37 },
+  'Владимирская область': { latitude: 56.13, longitude: 40.40 },
+  'Волгоградская область': { latitude: 48.71, longitude: 44.51 },
+  'Вологодская область': { latitude: 59.22, longitude: 39.89 },
+  'Воронежская область': { latitude: 51.66, longitude: 39.20 },
+  'Город Севастополь': { latitude: 44.62, longitude: 33.52 },
+  'Забайкальский край': { latitude: 52.03, longitude: 113.50 },
+  'Ивановская область': { latitude: 56.99, longitude: 40.98 },
+  'Иркутская область': { latitude: 52.29, longitude: 104.30 },
+  'Кабардино-Балкарская Республика': { latitude: 43.49, longitude: 43.61 },
+  'Калужская область': { latitude: 54.51, longitude: 36.26 },
+  'Карачаево-Черкесская Республика': { latitude: 44.23, longitude: 42.06 },
+  'Кемеровская область': { latitude: 55.35, longitude: 86.09 },
+  'Кировская область': { latitude: 58.60, longitude: 49.66 },
+  'Костромская область': { latitude: 57.77, longitude: 40.93 },
+  'Краснодарский край': { latitude: 45.04, longitude: 38.97 },
+  'Красноярский край': { latitude: 56.01, longitude: 92.85 },
+  'Курганская область': { latitude: 55.44, longitude: 65.34 },
+  'Курская область': { latitude: 51.73, longitude: 36.19 },
+  'Ленинградская область': { latitude: 59.94, longitude: 30.31 },
+  'Липецкая область': { latitude: 52.61, longitude: 39.59 },
+  'Московская область': { latitude: 55.75, longitude: 37.62 },
+  'Мурманская область': { latitude: 68.97, longitude: 33.08 },
+  'Нижегородская область': { latitude: 56.33, longitude: 44.00 },
+  'Новгородская область': { latitude: 58.52, longitude: 31.27 },
+  'Новосибирская область': { latitude: 55.03, longitude: 82.92 },
+  'Омская область': { latitude: 54.99, longitude: 73.37 },
+  'Оренбургская область': { latitude: 51.77, longitude: 55.10 },
+  'Орловская область': { latitude: 52.97, longitude: 36.06 },
+  'Пензенская область': { latitude: 53.20, longitude: 45.00 },
+  'Пермский край': { latitude: 58.01, longitude: 56.25 },
+  'Псковская область': { latitude: 57.82, longitude: 28.33 },
+  'Республика Алтай': { latitude: 51.96, longitude: 85.96 },
+  'Республика Башкортостан': { latitude: 54.74, longitude: 55.97 },
+  'Республика Бурятия': { latitude: 51.83, longitude: 107.58 },
+  'Республика Дагестан': { latitude: 42.98, longitude: 47.50 },
+  'Республика Ингушетия': { latitude: 43.17, longitude: 44.82 },
+  'Республика Калмыкия': { latitude: 46.31, longitude: 44.27 },
+  'Республика Карелия': { latitude: 61.79, longitude: 34.36 },
+  'Республика Коми': { latitude: 61.67, longitude: 50.84 },
+  'Республика Крым': { latitude: 44.95, longitude: 34.10 },
+  'Республика Марий Эл': { latitude: 56.63, longitude: 47.89 },
+  'Республика Мордовия': { latitude: 54.18, longitude: 45.18 },
+  'Республика Северная Осетия-Алания': { latitude: 43.02, longitude: 44.68 },
+  'Республика Татарстан': { latitude: 55.79, longitude: 49.12 },
+  'Республика Тыва': { latitude: 51.72, longitude: 94.44 },
+  'Республика Хакасия': { latitude: 53.72, longitude: 91.43 },
+  'Ростовская область': { latitude: 47.22, longitude: 39.72 },
+  'Рязанская область': { latitude: 54.63, longitude: 39.74 },
+  'Самарская область': { latitude: 53.20, longitude: 50.15 },
+  'Саратовская область': { latitude: 51.53, longitude: 46.03 },
+  'Свердловская область': { latitude: 56.84, longitude: 60.61 },
+  'Смоленская область': { latitude: 54.78, longitude: 32.05 },
+  'Ставропольский край': { latitude: 45.04, longitude: 41.97 },
+  'Тамбовская область': { latitude: 52.72, longitude: 41.45 },
+  'Тверская область': { latitude: 56.86, longitude: 35.90 },
+  'Томская область': { latitude: 56.48, longitude: 84.95 },
+  'Тульская область': { latitude: 54.19, longitude: 37.62 },
+  'Тюменская область': { latitude: 57.15, longitude: 65.53 },
+  'Удмуртская Республика': { latitude: 56.85, longitude: 53.20 },
+  'Ульяновская область': { latitude: 54.31, longitude: 48.40 },
+  'Челябинская область': { latitude: 55.16, longitude: 61.40 },
+  'Чеченская Республика': { latitude: 43.32, longitude: 45.69 },
+  'Чувашская Республика-Чувашия': { latitude: 56.13, longitude: 47.25 },
+  'Ярославская область': { latitude: 57.63, longitude: 39.87 },
+}
 
 export default {
     name: 'PriceModeling',
@@ -246,8 +308,8 @@ export default {
             targetVariable: 'Цена продажи электроэнергии',
             targetVariables: ['Цена продажи электроэнергии'],
             
-            forecastMethod: 'ar', // 'ar' или 'ols'
-            forecastHorizon: 24,  // на сколько часов прогнозируем
+            selectedForecastView: 'ar', // Переключатель для просмотра результатов
+            forecastHorizon: 24,        // на сколько часов прогнозируем
 
             factors: [
                 { label: 'Объём', value: 'full_plan' },
@@ -273,9 +335,11 @@ export default {
             temperatureByDateHour: {},
             statistics: null,
             correlationMatrix: null,
-            forecast: null,
-            hourlyForecastRows: [],
-            forecastChartRows: [],
+            
+            // Хранилища для результатов обоих методов
+            forecastData: { ar: null, ols: null },
+            forecastChartData: { ar: [], ols: [] },
+            hourlyForecastData: { ar: [], ols: [] },
         }
     },
 
@@ -327,27 +391,40 @@ export default {
             return { loaded, total }
         },
 
+        // Вычисляемые свойства для текущего выбранного вида
+        currentForecast() {
+            return this.forecastData[this.selectedForecastView]
+        },
+        
+        currentChartRows() {
+            return this.forecastChartData[this.selectedForecastView]
+        },
+
+        currentHourlyRows() {
+            return this.hourlyForecastData[this.selectedForecastView]
+        },
+
         forecastChartOption() {
             return {
                 tooltip: { trigger: 'axis' },
                 legend: { top: 0 },
                 grid: { left: 60, right: 25, top: 60, bottom: 70 },
                 dataZoom: [{ type: 'inside' }, { type: 'slider', bottom: 20 }],
-                xAxis: { type: 'category', data: this.forecastChartRows.map(row => row.dateTime) },
+                xAxis: { type: 'category', data: this.currentChartRows.map(row => row.dateTime) },
                 yAxis: { type: 'value', name: 'руб./МВт·ч' },
                 series: [
                     { 
                         name: 'Фактическая цена', 
                         type: 'line', 
                         smooth: true, 
-                        data: this.forecastChartRows.map(row => row.actual),
-                        connectNulls: false // Чтобы линия истории не соединялась с прогнозом
+                        data: this.currentChartRows.map(row => row.actual),
+                        connectNulls: false
                     },
                     { 
                         name: 'Прогнозная цена', 
                         type: 'line', 
                         smooth: true, 
-                        data: this.forecastChartRows.map(row => row.predicted),
+                        data: this.currentChartRows.map(row => row.predicted),
                         connectNulls: false
                     },
                 ],
@@ -384,9 +461,9 @@ export default {
             this.loadedOnce = true
             this.statistics = null
             this.correlationMatrix = null
-            this.forecast = null
-            this.hourlyForecastRows = []
-            this.forecastChartRows = []
+            this.forecastData = { ar: null, ols: null }
+            this.forecastChartData = { ar: [], ols: [] }
+            this.hourlyForecastData = { ar: [], ols: [] }
         },
 
         async fetchTemperatureRows({ region, from, to }) {
@@ -574,15 +651,24 @@ export default {
                 return
             }
 
-            if (this.forecastMethod === 'ar') {
-                this.buildAutoRegressiveForecast(rows)
-            } else {
-                this.buildExogenousForecast(rows)
+            // Строим оба прогноза
+            const arResult = this.buildAutoRegressiveForecast(rows)
+            const olsResult = this.buildExogenousForecast(rows)
+
+            if (arResult) {
+                this.forecastData.ar = arResult.forecast
+                this.forecastChartData.ar = arResult.chartRows
+                this.hourlyForecastData.ar = arResult.hourlyRows
+            }
+            if (olsResult) {
+                this.forecastData.ols = olsResult.forecast
+                this.forecastChartData.ols = olsResult.chartRows
+                this.hourlyForecastData.ols = olsResult.hourlyRows
             }
         },
 
         buildAutoRegressiveForecast(rows) {
-            const lags = 24 // Берем 24 предыдущих часа
+            const lags = 24
             const prices = rows.map(r => this.getPrice(r)).filter(Number.isFinite)
             
             const X = []
@@ -595,10 +681,9 @@ export default {
             const beta = this.calculateOlsCoefficients(X, y)
             if (!beta) {
                 alert('Не удалось обучить AR-модель.')
-                return
+                return null
             }
 
-            // Итеративный прогноз
             const forecastPrices = []
             const history = [...prices]
             for (let step = 0; step < this.forecastHorizon; step++) {
@@ -608,51 +693,34 @@ export default {
                 history.push(nextPrice)
             }
 
-            // Сборка данных для графика
-            const histSlice = rows.slice(-48) // Показываем последние 48 часов истории
+            const histSlice = rows.slice(-48)
             const histDates = histSlice.map(r => this.getDateTimeLabel(r))
             const histPrices = histSlice.map(r => this.getPrice(r))
 
             const lastDate = new Date(rows[rows.length - 1].timestamp)
             const futureDates = this.generateFutureTimestamps(this.forecastHorizon, lastDate)
 
-            this.forecastChartRows = [
+            // Формируем данные для графика БЕЗ дублирования последней точки
+            const chartRows = [
                 ...histDates.map((date, idx) => ({ dateTime: date, actual: histPrices[idx], predicted: null })),
-                // Чтобы линия прогноза соединилась с историей, последнюю историческую точку дублируем в прогноз
-                { dateTime: histDates[histDates.length - 1], actual: null, predicted: histPrices[histPrices.length - 1] },
                 ...futureDates.map((date, idx) => ({ dateTime: date, actual: null, predicted: Number(forecastPrices[idx].toFixed(2)) }))
             ]
 
-            // Убираем дубликат последней даты для ECharts (чтобы не было двух точек на оси)
-            const uniqueChartRows = []
-            const seenDates = new Set()
-            this.forecastChartRows.forEach(r => {
-                if (!seenDates.has(r.dateTime)) {
-                    uniqueChartRows.push({ dateTime: r.dateTime, actual: r.actual, predicted: r.predicted })
-                    seenDates.add(r.dateTime)
-                } else {
-                    // Если дата дублируется, объединяем значения
-                    const existing = uniqueChartRows.find(x => x.dateTime === r.dateTime)
-                    if (existing) {
-                        existing.predicted = r.predicted
-                    }
-                }
-            })
-            this.forecastChartRows = uniqueChartRows
-
-            this.hourlyForecastRows = futureDates.map((date, idx) => ({
-                dateTime: date,
-                predictedPrice: this.formatNumber(forecastPrices[idx]),
-            }))
-
-            this.forecast = {
-                trainCount: prices.length,
-                usedFactors: ['Предыдущие 24 часа цены'],
-                r2: NaN, // R2 для AR мы не считаем на тесте, так как цель - прогноз
-                qualityColor: 'blue-lighten-1',
-                qualityLabel: 'Прогноз AR построен',
-                avgPredictedPrice: this.mean(forecastPrices),
-                skippedFactors: [],
+            return {
+                forecast: {
+                    trainCount: prices.length,
+                    usedFactors: ['Предыдущие 24 часа цены'],
+                    r2: NaN,
+                    qualityColor: 'blue-lighten-1',
+                    qualityLabel: 'Прогноз AR построен',
+                    avgPredictedPrice: this.mean(forecastPrices),
+                    skippedFactors: [],
+                },
+                chartRows,
+                hourlyRows: futureDates.map((date, idx) => ({
+                    dateTime: date,
+                    predictedPrice: this.formatNumber(forecastPrices[idx]),
+                }))
             }
         },
 
@@ -688,7 +756,7 @@ export default {
 
             if (preparedRows.length < 24) {
                 alert('Недостаточно данных для OLS-модели с выбранными факторами.')
-                return
+                return null
             }
 
             const yValues = preparedRows.map(item => item.y)
@@ -708,13 +776,11 @@ export default {
             const beta = this.calculateOlsCoefficients(design, yValues)
             if (!beta) {
                 alert('Не удалось обучить OLS-модель.')
-                return
+                return null
             }
 
-            // Усредняем экзогенные факторы за последние 24 часа для будущего прогноза
             const last24Rows = rowsWithLag.slice(-24)
             const futureFactorsAvg = {}
-            // Временные признаки мы вычислим отдельно для каждого часа, а вот температуру и объем усредним
             const avgFactors = ['full_plan', 'temperature', 'HPP', 'CHP', 'Q_cons', 'Q_exp', 'Q_imp']
             avgFactors.forEach(f => {
                 const vals = last24Rows.map(item => this.getFactorValue(item, f)).filter(Number.isFinite)
@@ -727,11 +793,9 @@ export default {
             const forecastPrices = []
 
             futureDates.forEach(dateStr => {
-                // Создаем фейковую строку для извлечения временных признаков
                 const [datePart, timePart] = dateStr.split(' ')
                 const [year, month, day] = datePart.split('-').map(Number)
                 const hour = Number(timePart.split(':')[0])
-                const fakeDate = new Date(year, month - 1, day, hour)
                 
                 const fakeRow = {
                     timestamp: dateStr,
@@ -745,7 +809,6 @@ export default {
                     plan_import: futureFactorsAvg.Q_imp,
                 }
                 
-                // previousPrice для будущего берем как предыдущий прогноз
                 const prevPrice = forecastPrices.length ? forecastPrices[forecastPrices.length - 1] : rows[rows.length - 1] ? this.getPrice(rows[rows.length - 1]) : 0
                 const itemForFactor = { row: fakeRow, previousPrice: prevPrice }
 
@@ -759,43 +822,31 @@ export default {
                 forecastPrices.push(pred)
             })
 
-            // Сборка данных для графика
             const histSlice = rows.slice(-48)
             const histDates = histSlice.map(r => this.getDateTimeLabel(r))
             const histPrices = histSlice.map(r => this.getPrice(r))
 
-            this.forecastChartRows = [
+            // Формируем данные для графика БЕЗ дублирования
+            const chartRows = [
                 ...histDates.map((date, idx) => ({ dateTime: date, actual: histPrices[idx], predicted: null })),
-                { dateTime: histDates[histDates.length - 1], actual: null, predicted: histPrices[histPrices.length - 1] },
                 ...futureDates.map((date, idx) => ({ dateTime: date, actual: null, predicted: Number(forecastPrices[idx].toFixed(2)) }))
             ]
 
-            const uniqueChartRows = []
-            const seenDates = new Set()
-            this.forecastChartRows.forEach(r => {
-                if (!seenDates.has(r.dateTime)) {
-                    uniqueChartRows.push({ dateTime: r.dateTime, actual: r.actual, predicted: r.predicted })
-                    seenDates.add(r.dateTime)
-                } else {
-                    const existing = uniqueChartRows.find(x => x.dateTime === r.dateTime)
-                    if (existing) existing.predicted = r.predicted
-                }
-            })
-            this.forecastChartRows = uniqueChartRows
-
-            this.hourlyForecastRows = futureDates.map((date, idx) => ({
-                dateTime: date,
-                predictedPrice: this.formatNumber(forecastPrices[idx]),
-            }))
-
-            this.forecast = {
-                trainCount: yValues.length,
-                usedFactors: usedFactors.map(v => this.getFactorLabel(v)),
-                r2: NaN,
-                qualityColor: 'green-lighten-1',
-                qualityLabel: 'Прогноз OLS построен',
-                avgPredictedPrice: this.mean(forecastPrices),
-                skippedFactors: expandedFactors.filter(f => !usedFactors.includes(f) && !f.startsWith('month_')).map(v => this.getFactorLabel(v)),
+            return {
+                forecast: {
+                    trainCount: yValues.length,
+                    usedFactors: usedFactors.map(v => this.getFactorLabel(v)),
+                    r2: NaN,
+                    qualityColor: 'green-lighten-1',
+                    qualityLabel: 'Прогноз OLS построен',
+                    avgPredictedPrice: this.mean(forecastPrices),
+                    skippedFactors: expandedFactors.filter(f => !usedFactors.includes(f) && !f.startsWith('month_')).map(v => this.getFactorLabel(v)),
+                },
+                chartRows,
+                hourlyRows: futureDates.map((date, idx) => ({
+                    dateTime: date,
+                    predictedPrice: this.formatNumber(forecastPrices[idx]),
+                }))
             }
         },
 
@@ -989,7 +1040,6 @@ export default {
 </script>
 
 <style scoped>
-/* Стили для таблиц и скролла оставляем как были */
 .correlation-scroll {
     overflow-x: auto;
     border: 1px solid rgba(0, 0, 0, 0.1);
@@ -1000,7 +1050,7 @@ export default {
 :deep(.v-field) { border-radius: 8px; }
 :deep(.v-selection-control__input) { transform: scale(0.95); }
 
-/* Фикс для HintFormula, чтобы не сжималась */
+/* Фикс для HintFormula */
 .d-flex.align-center.flex-shrink-0 {
     flex-shrink: 0 !important;
 }
