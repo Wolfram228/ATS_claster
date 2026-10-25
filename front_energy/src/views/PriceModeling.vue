@@ -1278,6 +1278,18 @@ export default {
 :deep(.v-field) { border-radius: 8px; }
 :deep(.v-selection-control__input) { transform: scale(0.95); }
 
+/* Синхронизируем выравнивание заголовков и данных в таблицах */
+.correlation-scroll :deep(th),
+.correlation-scroll :deep(td) {
+    text-align: center;
+}
+
+/* Первая колонка (название показателя/переменной) — по левому краю */
+.correlation-scroll :deep(th:first-child),
+.correlation-scroll :deep(td:first-child) {
+    text-align: left;
+}
+
 /* Фикс для HintFormula */
 .d-flex.align-center.flex-shrink-0 {
     flex-shrink: 0 !important;
