@@ -1,242 +1,294 @@
 <template>
-    <v-container>
-        <v-card
-        variant="outlined"
-        rounded="lg"
-        elevation="1" 
-        style="border-color: rgba(0, 0, 0, 0.2)">
-            <v-card-text v-if="!inited">Загрузка данных для графиков...</v-card-text>
-            <v-card-text v-else>
-                <!-- <div class="text-h5 font-weight-bold" align="center">Динамика потребления</div> -->
-                <v-row justify="center">
-                    <div class="text-body-2 text-grey-darken-1" style="text-align: center; width: 100%"> *Данные на странице представлены по региону {{ this.selectedRegionPrev }} </div>
-                    <v-col cols="12" md="6">
-                        <!-- печенька за текущие сутки (lastDayBoats) -->
-                        <VChart :option="pieOptions" style="width: 100%; height: 400px;" />
-                    </v-col>
-                    <v-col cols="12" md="6" v-if="!prevDayLoading">
-                        <!-- печенька за предыдущие сутки (prevDayBoats) -->
-                        <VChart :option="pieOptionsPrev" style="width: 100%; height: 400px;" />
-                    </v-col>
-                </v-row>
-                <v-row justify="center">
-                    <!-- <div class="text-h5 font-weight-bold mt-5" align="center">Объёмы по генераторам: 2025-10-10 vs 2025-10-11</div> -->
-                    <VChart :option="lineOptions" style="width: 100%; height: 400px;" />
-                </v-row>
-            </v-card-text>
-        </v-card>
-    </v-container>
+  <div class="home">
+    <!-- Блок 1. О проекте -->
+    <section class="hero">
+      <img :src="img2" alt="Ветроэнергетические установки" class="hero__img" />
+      <div class="hero__shade"></div>
+      <div class="hero__inner">
+        <p class="hero__kicker">О проекте</p>
+        <h1 class="hero__title">ТокАналитика</h1>
+        <div class="hero__bottom">
+          <div class="hero__lead">
+            <h2 class="hero__headline">
+              ТокАналитика — интеллектуальный анализ рынка электроэнергии.
+            </h2>
+            <p class="hero__sub">
+              Мы объединили разрозненные данные в единую платформу для мониторинга,
+              аналитики и прогнозирования. Исследуйте потребление, отслеживайте цены,
+              работайте с детализированными таблицами и стройте математические модели (OLS)
+              в удобном интерфейсе.
+            </p>
+          </div>
+          <router-link to="/information" class="pill pill--light">
+            Начать работу
+            <span class="pill__dot">→</span>
+          </router-link>
+        </div>
+      </div>
+    </section>
+
+    <!-- Блоки модулей -->
+    <section
+      v-for="(m, i) in modules"
+      :key="m.to"
+      class="module"
+      :class="{ 'module--reverse': i % 2 === 1 }"
+    >
+      <div class="module__text">
+        <p class="kicker"><span class="kicker__num">0{{ i + 1 }}</span>{{ m.kicker }}</p>
+        <h2 class="module__title">{{ m.title }}</h2>
+        <p class="module__desc">{{ m.text }}</p>
+        <router-link :to="m.to" class="pill">
+          {{ m.cta }}
+          <span class="pill__dot">→</span>
+        </router-link>
+      </div>
+      <div class="module__media">
+        <img :src="m.img" :alt="m.alt" />
+      </div>
+    </section>
+  </div>
 </template>
 
 <script>
-import { mapState } from 'vuex';
-
-const generatorFields = [
-    { key: 'plan_GES', label: 'ГЭС' },
-    { key: 'plan_AES', label: 'АЭС' },
-    { key: 'plan_TES', label: 'ТЭС' },
-    { key: 'plan_SES', label: 'СЭС' },
-    { key: 'plan_VES', label: 'ВЭС' },
-    { key: 'plan_other', label: 'прочие ВИЭ' }
-];
+import img1 from '../assets/1.webp'
+import img2 from '../assets/2.webp'
+import img3 from '../assets/3.webp'
+import img4 from '../assets/4.webp'
+import img5 from '../assets/5.webp'
 
 export default {
-    name: 'Home',
-
-    computed: {
-        ...mapState({
-            boats: state => state.lastDayBoats,
-            prevBoats: state => state.prevDayBoats,
-            inited: state => state.inited,
-            lastDayLoading: state => state.lastDayLoading,
-            prevDayLoading: state => state.prevDayLoading
-        }),
-        selectedRegionPrev: {
-            get() {
-                return this.$store.state.selectedRegionPrev
-            },
-            set(region) {
-                this.$store.commit("SET_SELECTED_REGION_PREV", region)
-            }
+  name: 'Home',
+  data() {
+    return {
+      img2,
+      modules: [
+        {
+          kicker: 'Информация',
+          title: 'Баланс энергосистемы за сутки',
+          text: 'Сводные показатели генерации и потребления по ГЭС, АЭС, ТЭС и ВИЭ. Быстрый обзор состояния системы до погружения в детали.',
+          to: '/information',
+          cta: 'Открыть информацию',
+          img: img1,
+          alt: 'Гидроэлектростанция'
         },
-
-        // список часов (0–23), по которым есть данные (за два дня)
-        hours() {
-            const all = [...this.boats, ...this.prevBoats];
-            const set = new Set(all.map(r => r.hour));
-            return Array.from(set).sort((a, b) => a - b);
+        {
+          kicker: 'Таблица',
+          title: 'Почасовые данные в одном срезе',
+          text: 'Фильтры по датам, регионам и типам генерации превращают массив наблюдений в рабочую таблицу для сверки и дальнейшего анализа.',
+          to: '/table',
+          cta: 'Открыть таблицу',
+          img: img5,
+          alt: 'Электрическая подстанция'
         },
-
-        // список дат 'YYYY-MM-DD' в диапазоне (предыдущие + текущие сутки)
-        dates() {
-            const all = [...this.boats, ...this.prevBoats];
-            const set = new Set(
-                all
-                .filter(r => typeof r.timestamp === 'string')
-                .map(r => r.timestamp.slice(0, 10))
-            );
-            return Array.from(set).sort();
+        {
+          kicker: 'Карта',
+          title: 'География энергосистемы',
+          text: 'Интерактивная карта регионов показывает распределение нагрузки и мощностей: сразу видно, где потребление концентрируется.',
+          to: '/interactiveMap',
+          cta: 'Открыть карту',
+          img: img4,
+          alt: 'Энергообъект в ландшафте'
         },
-
-        pieData() {
-            const sumByField = field => this.boats.reduce((acc, row) => acc + (row[field] || 0), 0);
-
-            return generatorFields.map(g => ({
-                name: g.label,
-                value: sumByField(g.key)
-            }));
+        {
+          kicker: 'Аналитика цен',
+          title: 'Цена электроэнергии во времени',
+          text: 'Пики, провалы и сезонные сдвиги оптового рынка. Сопоставляйте цену с нагрузкой и отделяйте шум от устойчивых трендов.',
+          to: '/price-analytics',
+          cta: 'Смотреть аналитику',
+          img: img3,
+          alt: 'Солнечная электростанция'
         },
-
-        pieOptions() {
-            return {
-                title: {
-                    text: 'Динамика потребления за текущие сутки',
-                    left: 'center'
-                },
-                tooltip: {
-                    trigger: 'item',
-                    formatter: params => {
-                        const marker = params.marker;
-                        const name = params.name;            // {b}
-                        const value = Number(params.value);  // {c}
-                        const percent = params.percent;      // {d}
-
-                        return `${marker} ${name}: ${value.toFixed(2)} МВт·ч (${percent}%)`;
-                    }
-                },
-                legend: {
-
-                },
-                series: [
-                    {
-                        type: 'pie',
-                        radius: '70%',
-                        data: this.pieData
-                    }
-                ]
-            };
-        },
-
-        pieDataPrev() {
-            const sumByField = field =>
-                this.prevBoats.reduce((acc, row) => acc + (row[field] || 0), 0);
-
-            return generatorFields.map(g => ({
-                name: g.label,
-                value: sumByField(g.key)
-            }));
-        },
-
-        pieOptionsPrev() {
-            return {
-                title: {
-                    text: 'Динамика потребления за предыдущие сутки',
-                    left: 'center'
-                },
-                tooltip: {
-                    trigger: 'item',
-                    formatter: params => {
-                        const marker = params.marker;
-                        const name = params.name;
-                        const value = Number(params.value);
-                        const percent = params.percent;
-
-                        return `${marker} ${name}: ${value.toFixed(2)} МВт·ч (${percent}%)`;
-                    }
-                },
-                legend: {
-
-                },
-                series: [
-                    {
-                        type: 'pie',
-                        radius: '70%',
-                        data: this.pieDataPrev
-                    }
-                ]
-            };
-        },
-
-        lineSeries() {
-            const series = [];
-
-            this.dates.forEach(date => {
-                const rowsForDate = [...this.boats, ...this.prevBoats].filter(r =>
-                    String(r.timestamp).startsWith(date)
-                );
-
-                generatorFields.forEach(gen => {
-                    const data = this.hours.map(hour => {
-                        // суммируем по всем регионам для (дата, час)
-                        const valueForHour = rowsForDate
-                            .filter(r => r.hour === hour)
-                            .reduce((sum, r) => sum + (Number(r[gen.key]) || 0), 0,);
-
-                        return valueForHour;
-                    });
-
-                    series.push({
-                        name: `${gen.label} ${date}`,
-                        type: 'line',
-                        smooth: false,
-                        data,
-                    });
-                });
-            });
-
-            return series;
-        },
-
-        lineOptions() {
-            return {
-                title: {
-                    text: this.dates.length
-                        ? `Объёмы по генераторам: ${this.dates.join(' vs ')}`
-                        : 'Объёмы по генераторам',
-                    left: 'center',
-                    top: 0
-                },
-                tooltip: { 
-                    trigger: 'axis',
-                    formatter: params => {
-                        let hour = params[0].axisValue; // подпись по оси X (час)
-
-                        let lines = params.map(p => {
-                            const marker = p.marker;
-                            const name = p.seriesName;       // название серии
-                            const value = Number(p.value);   // значение точки
-
-                            return `${marker} ${name}: ${value.toFixed(2)} МВт·ч`;
-                        });
-
-                        return `Час: ${hour}<br>` + lines.join('<br>');
-                    }
-                },
-                legend: { top: 25 },
-                grid: {
-                    left: '3%',
-                    right: '4%',
-                    bottom: '3%',
-                    containLabel: true
-                },
-                xAxis: {
-                    type: 'category',
-                    boundaryGap: false,
-                    name: 'Час',
-                    data: this.hours
-                },
-                yAxis: {
-                    type: 'value',
-                    name: 'Объём, МВт·ч'
-                },
-                series: this.lineSeries
-            };
+        {
+          kicker: 'Моделирование цен',
+          title: 'OLS-модель с прозрачными коэффициентами',
+          text: 'Выбирайте факторы, оценивайте линейную модель и оценивайте вклад каждой переменной в прогноз цены.',
+          to: '/price-modeling',
+          cta: 'Перейти к модели',
+          img: img2,
+          alt: 'Ветроустановки в поле'
         }
-    },
-    created() {
-        if (!this.$store.state.inited) {
-            this.$store.dispatch('initBoats');
-        }
+      ]
     }
-};
+  }
+}
 </script>
+
+<style scoped>
+.home {
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 32px 24px 120px;
+  box-sizing: border-box;
+  text-align: left;
+  color: #0e0e0e;
+  background: #fff;
+}
+
+/* ---------- Hero ---------- */
+.hero {
+  position: relative;
+  min-height: 680px;
+  border-radius: 40px;
+  overflow: hidden;
+  color: #fff;
+}
+.hero__img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.hero__shade {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(8, 12, 18, 0.1) 0%, rgba(8, 12, 18, 0.15) 40%, rgba(8, 12, 18, 0.75) 100%);
+}
+.hero__inner {
+  position: relative;
+  z-index: 1;
+  min-height: 680px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 40px 48px 48px;
+  box-sizing: border-box;
+}
+.hero__kicker {
+  margin: 0;
+  font-size: 13px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+.hero__title {
+  margin: 0;
+  font-size: clamp(48px, 11vw, 150px);
+  line-height: 0.9;
+  font-weight: 600;
+  letter-spacing: -0.045em;
+  text-transform: uppercase;
+}
+.hero__bottom {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 40px;
+}
+.hero__lead {
+  max-width: 680px;
+}
+.hero__headline {
+  margin: 0 0 16px;
+  font-size: clamp(24px, 2.8vw, 38px);
+  line-height: 1.1;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+}
+.hero__sub {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+/* ---------- Pill button ---------- */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  padding: 8px 8px 8px 24px;
+  border-radius: 999px;
+  background: #0e0e0e;
+  color: #fff !important;
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: transform 0.2s ease;
+}
+.pill:hover { transform: translateY(-2px); }
+.pill__dot {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: #fff;
+  color: #0e0e0e;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+}
+.pill--light { background: #fff; color: #0e0e0e !important; }
+.pill--light .pill__dot { background: #0e0e0e; color: #fff; }
+
+/* ---------- Modules ---------- */
+.module {
+  display: grid;
+  grid-template-columns: 1fr 1.1fr;
+  gap: 72px;
+  align-items: center;
+  margin-top: 160px;
+}
+.module--reverse { grid-template-columns: 1.1fr 1fr; }
+.module--reverse .module__text { order: 2; }
+.module--reverse .module__media { order: 1; }
+
+.kicker {
+  margin: 0 0 28px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.kicker__num {
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: #f2f2f2;
+  letter-spacing: 0.06em;
+}
+.module__title {
+  margin: 0 0 24px;
+  font-size: clamp(34px, 4.2vw, 60px);
+  line-height: 1.04;
+  font-weight: 500;
+  letter-spacing: -0.035em;
+}
+.module__desc {
+  margin: 0 0 40px;
+  max-width: 46ch;
+  font-size: 16px;
+  line-height: 1.65;
+  color: #6b6b6b;
+}
+.module__media {
+  border-radius: 32px;
+  overflow: hidden;
+  background: #f4f4f4;
+}
+.module__media img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+}
+
+@media (max-width: 1024px) {
+  .module,
+  .module--reverse { grid-template-columns: 1fr; gap: 40px; margin-top: 112px; }
+  .module--reverse .module__text,
+  .module--reverse .module__media { order: initial; }
+  .hero__bottom { flex-direction: column; align-items: flex-start; }
+}
+@media (max-width: 700px) {
+  .home { padding: 16px 12px 80px; }
+  .hero, .hero__inner { min-height: 560px; border-radius: 28px; }
+  .hero__inner { padding: 24px 22px 28px; }
+  .module__media { border-radius: 24px; }
+}
+</style>
