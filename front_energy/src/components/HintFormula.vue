@@ -37,6 +37,7 @@ export default {
 <style>
 .hint-formula__content {
     width: 440px;
+    max-width: 90vw; /* Добавлено: чтобы окно не вылезало за экран на телефоне */
     padding: 12px 16px;
     background-color: #fff;
     color: #333;
@@ -65,6 +66,7 @@ export default {
     line-height: 1;
     cursor: pointer;
     transition: background-color 0.2s ease;
+    flex-shrink: 0; /* Добавлено: запрещает кнопке сжиматься в эллипс */
 }
 
 .hint-formula__trigger:hover {
