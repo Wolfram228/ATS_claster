@@ -44,7 +44,34 @@
                         </v-card>
                     </v-col>
                 </v-row>
-
+                
+                <v-row class="mt-4">
+                <v-col cols="12" md="4">
+                    <v-select
+                        v-model="forecastHorizon"
+                        :items="forecastHorizonItems"
+                        label="Горизонт прогноза"
+                        hide-details
+                    />
+                </v-col>
+                <v-col cols="12" md="4">
+                    <v-select
+                        v-model="trainingWindow"
+                        :items="trainingWindowItems"
+                        label="Глубина обучения"
+                        hide-details
+                    />
+                </v-col>
+                <v-col cols="12" md="4">
+                    <v-select
+                        v-model="arLags"
+                        :items="arLagsItems"
+                        label="Лаги AR-модели"
+                        hide-details
+                    />
+                </v-col>
+            </v-row>
+                
                 <v-row class="mt-4">
                     <v-col cols="12" md="4">
                         <v-btn block min-height="52" color="blue-grey-lighten-1" :loading="priceAnalyticsLoading || weatherLoading" :disabled="isDateInvalid" @click="loadData">
@@ -214,7 +241,21 @@
                     <tr v-if="currentForecast.usedFactors"><td class="font-weight-bold">Использованные факторы</td><td>{{ currentForecast.usedFactors.join(', ') }}</td></tr>
                     <tr><td class="font-weight-bold">Исторических данных (часов)</td><td>{{ currentForecast.trainCount }}</td></tr>
                     <tr><td class="font-weight-bold">Горизонт прогноза (часов)</td><td>{{ forecastHorizon }}</td></tr>
-                    <tr><td class="font-weight-bold">R² на исторических данных</td><td>{{ formatNumber(currentForecast.r2, 4) }}</td></tr>
+                   <tr>
+                        <td class="font-weight-bold" colspan="2" style="padding-top: 12px;">Качество модели (backtesting 80/20)</td>
+                    </tr>
+                    <tr>
+                        <td class="pl-6">R² на тестовой выборке</td>
+                        <td>{{ formatOptional(currentForecast.backtest?.r2, 4) }}</td>
+                    </tr>
+                    <tr>
+                        <td class="pl-6">MAE (средняя абсолютная ошибка)</td>
+                        <td>{{ formatOptional(currentForecast.backtest?.mae) }} руб./МВт·ч</td>
+                    </tr>
+                    <tr>
+                        <td class="pl-6">RMSE (среднеквадратичная ошибка)</td>
+                        <td>{{ formatOptional(currentForecast.backtest?.rmse) }} руб./МВт·ч</td>
+                    </tr>
                     <tr><td class="font-weight-bold">Средняя прогнозируемая цена</td><td>{{ formatNumber(currentForecast.avgPredictedPrice) }} руб./МВт·ч</td></tr>
                 </tbody>
             </v-table>
@@ -339,7 +380,30 @@ export default {
             targetVariables: ['Цена продажи электроэнергии'],
             
             selectedForecastView: 'ar', // Переключатель для просмотра результатов
-            forecastHorizon: 24,        // на сколько часов прогнозируем
+            forecastHorizon: 24,
+            forecastHorizonItems: [
+                { title: '12 часов', value: 12 },
+                { title: '24 часа', value: 24 },
+                { title: '48 часов', value: 48 },
+                { title: '72 часа', value: 72 },
+            ],
+            
+            trainingWindow: 0,
+            trainingWindowItems: [
+                { title: 'Весь период', value: 0 },
+                { title: 'Последние 7 дней', value: 7 },
+                { title: 'Последние 14 дней', value: 14 },
+                { title: 'Последние 30 дней', value: 30 },
+            ],
+            
+            arLags: 24,
+            arLagsItems: [
+                { title: '12 часов', value: 12 },
+                { title: '24 часа', value: 24 },
+                { title: '48 часов', value: 48 },
+                { title: '72 часа', value: 72 },
+                { title: '168 часов (неделя)', value: 168 },
+            ],
 
             factors: [
                 { label: 'Объём', value: 'full_plan' },
@@ -464,14 +528,103 @@ export default {
 
     methods: {
         ...mapActions(['fetchPriceAnalyticsRows']),
-
+        
+        formatOptional(value, digits = 2) {
+            if (value === null || value === undefined || !Number.isFinite(Number(value))) return '—'
+            return this.formatNumber(value, digits)
+        },
+        
         getInitialRange() {
             const today = new Date()
             const from = new Date()
             from.setDate(today.getDate() - 14)
             return { from: this.toDateString(from), to: this.toDateString(today) }
         },
-
+        getTrainingRows(rows) {
+            if (!this.trainingWindow) return rows
+            const hours = this.trainingWindow * 24
+            if (rows.length <= hours) return rows
+            return rows.slice(-hours)
+        },
+        
+        computeMetrics(actuals, predictions) {
+            const n = actuals.length
+            if (n < 2) return { r2: NaN, mae: NaN, rmse: NaN, n: 0 }
+            
+            const errors = actuals.map((a, i) => a - predictions[i])
+            const mae = this.mean(errors.map(e => Math.abs(e)))
+            const rmse = Math.sqrt(this.mean(errors.map(e => e * e)))
+            
+            const meanActual = this.mean(actuals)
+            const ssTot = actuals.reduce((s, a) => s + (a - meanActual) ** 2, 0)
+            const ssRes = errors.reduce((s, e) => s + e * e, 0)
+            const r2 = ssTot ? 1 - ssRes / ssTot : NaN
+            
+            return { r2, mae, rmse, n }
+        },
+        
+        getQualityFromR2(r2) {
+            if (!Number.isFinite(r2)) return { label: 'Не оценено', color: 'grey-lighten-1' }
+            if (r2 >= 0.7) return { label: 'Высокое качество', color: 'green-lighten-1' }
+            if (r2 >= 0.3) return { label: 'Среднее качество', color: 'blue-lighten-1' }
+            if (r2 >= 0) return { label: 'Низкое качество', color: 'orange-lighten-1' }
+            return { label: 'Нестабильная модель', color: 'red-lighten-2' }
+        },
+        
+        backtestAR(prices, lags) {
+            if (prices.length < lags + 20) return null
+            
+            const X = []
+            const y = []
+            for (let i = lags; i < prices.length; i++) {
+                X.push([1, ...prices.slice(i - lags, i)])
+                y.push(prices[i])
+            }
+            
+            const splitIndex = Math.max(Math.floor(X.length * 0.8), 5)
+            if (splitIndex >= X.length) return null
+            
+            const beta = this.calculateOlsCoefficients(X.slice(0, splitIndex), y.slice(0, splitIndex))
+            if (!beta) return null
+            
+            const testPredictions = X.slice(splitIndex).map(row => this.dot(row, beta))
+            return this.computeMetrics(y.slice(splitIndex), testPredictions)
+        },
+        
+        backtestOLS(preparedRows) {
+            if (preparedRows.length < 30) return null
+            
+            const featureCount = preparedRows[0].x.length
+            if (!featureCount) return null
+            
+            const splitIndex = Math.max(Math.floor(preparedRows.length * 0.8), 5)
+            if (splitIndex >= preparedRows.length) return null
+            
+            const trainRows = preparedRows.slice(0, splitIndex)
+            const testRows = preparedRows.slice(splitIndex)
+            
+            // means/stds считаем ТОЛЬКО на train, чтобы избежать утечки данных
+            const means = []
+            const stds = []
+            for (let j = 0; j < featureCount; j++) {
+                const col = trainRows.map(r => r.x[j])
+                const m = this.mean(col)
+                const s = this.std(col) || 1
+                means.push(m)
+                stds.push(s)
+            }
+            
+            const xTrain = trainRows.map(r => [1, ...r.x.map((v, i) => (v - means[i]) / stds[i])])
+            const yTrain = trainRows.map(r => r.y)
+            const xTest = testRows.map(r => [1, ...r.x.map((v, i) => (v - means[i]) / stds[i])])
+            const yTest = testRows.map(r => r.y)
+            
+            const beta = this.calculateOlsCoefficients(xTrain, yTrain)
+            if (!beta) return null
+            
+            const predictions = xTest.map(row => this.dot(row, beta))
+            return this.computeMetrics(yTest, predictions)
+        },
         toDateString(date) {
             const y = date.getFullYear()
             const m = String(date.getMonth() + 1).padStart(2, '0')
@@ -697,52 +850,65 @@ export default {
             }
         },
 
-        buildAutoRegressiveForecast(rows) {
-            const lags = 24
-            const prices = rows.map(r => this.getPrice(r)).filter(Number.isFinite)
+       buildAutoRegressiveForecast(rows) {
+            const lags = this.arLags
+            const trainRows = this.getTrainingRows(rows)
+            const prices = trainRows.map(r => this.getPrice(r)).filter(Number.isFinite)
             
+            if (prices.length < lags + 24) {
+                alert(`Недостаточно данных для AR-модели с ${lags} лагами. Нужно минимум ${lags + 24} часов.`)
+                return null
+            }
+            
+            // Backtesting на выбранном окне обучения
+            const backtest = this.backtestAR(prices, lags)
+            
+            // Финальная модель — на всех данных окна
             const X = []
             const y = []
             for (let i = lags; i < prices.length; i++) {
-                X.push(prices.slice(i - lags, i))
+                X.push([1, ...prices.slice(i - lags, i)])
                 y.push(prices[i])
             }
-
+            
             const beta = this.calculateOlsCoefficients(X, y)
             if (!beta) {
                 alert('Не удалось обучить AR-модель.')
                 return null
             }
-
+            
+            // Итеративный прогноз
             const forecastPrices = []
             const history = [...prices]
             for (let step = 0; step < this.forecastHorizon; step++) {
                 const lastLags = history.slice(-lags)
-                const nextPrice = this.dot(lastLags, beta)
+                const nextPrice = this.dot([1, ...lastLags], beta)
                 forecastPrices.push(nextPrice)
                 history.push(nextPrice)
             }
-
+            
+            // Данные для графика
             const histSlice = rows.slice(-48)
             const histDates = histSlice.map(r => this.getDateTimeLabel(r))
             const histPrices = histSlice.map(r => this.getPrice(r))
-
+            
             const lastDate = new Date(rows[rows.length - 1].timestamp)
             const futureDates = this.generateFutureTimestamps(this.forecastHorizon, lastDate)
-
-            // Формируем данные для графика БЕЗ дублирования последней точки
+            
             const chartRows = [
                 ...histDates.map((date, idx) => ({ dateTime: date, actual: histPrices[idx], predicted: null })),
                 ...futureDates.map((date, idx) => ({ dateTime: date, actual: null, predicted: Number(forecastPrices[idx].toFixed(2)) }))
             ]
-
+            
+            const quality = this.getQualityFromR2(backtest?.r2)
+            
             return {
                 forecast: {
                     trainCount: prices.length,
-                    usedFactors: ['Предыдущие 24 часа цены'],
-                    r2: NaN,
-                    qualityColor: 'blue-lighten-1',
-                    qualityLabel: 'Прогноз AR построен',
+                    usedFactors: [`Предыдущие ${lags} часов цены`],
+                    backtest,
+                    qualityColor: quality.color,
+                    qualityLabel: quality.label,
                     avgPredictedPrice: this.mean(forecastPrices),
                     skippedFactors: [],
                 },
@@ -755,27 +921,29 @@ export default {
         },
 
         buildExogenousForecast(rows) {
-            const rowsWithLag = rows.map((row, index) => {
-                const previousRow = index > 0 ? rows[index - 1] : null
+            const trainRows = this.getTrainingRows(rows)
+            
+            const rowsWithLag = trainRows.map((row, index) => {
+                const previousRow = index > 0 ? trainRows[index - 1] : null
                 const previousPrice = previousRow ? this.getPrice(previousRow) : NaN
                 return { row, previousPrice }
             })
-
+            
             const selected = [...this.selectedFactors]
             const expandedFactors = []
-
+            
             for (const factor of selected) {
                 if (factor === 'hourCycle') expandedFactors.push('hourSin', 'hourCos')
                 else if (factor === 'dayCycle') expandedFactors.push('daySin', 'dayCos')
                 else if (factor === 'monthDummy') { for (let month = 2; month <= 12; month++) expandedFactors.push(`month_${month}`) }
                 else expandedFactors.push(factor)
             }
-
+            
             const usedFactors = expandedFactors.filter(factor => {
                 const values = rowsWithLag.map(item => this.getFactorValue(item, factor)).filter(value => Number.isFinite(value))
                 return values.length >= 24 && new Set(values).size > 1
             })
-
+            
             const preparedRows = rowsWithLag
                 .map(item => {
                     const y = this.getPrice(item.row)
@@ -783,12 +951,16 @@ export default {
                     return { y, x, source: item.row }
                 })
                 .filter(item => Number.isFinite(item.y) && item.x.every(value => Number.isFinite(value)))
-
+            
             if (preparedRows.length < 24) {
                 alert('Недостаточно данных для OLS-модели с выбранными факторами.')
                 return null
             }
-
+            
+            // Backtesting
+            const backtest = this.backtestOLS(preparedRows)
+            
+            // Финальная модель на всех данных окна
             const yValues = preparedRows.map(item => item.y)
             const xValues = preparedRows.map(item => item.x)
             
@@ -801,14 +973,15 @@ export default {
                 means.push(mean)
                 stds.push(std)
             }
-
+            
             const design = xValues.map(row => [1, ...row.map((value, index) => (value - means[index]) / stds[index])])
             const beta = this.calculateOlsCoefficients(design, yValues)
             if (!beta) {
                 alert('Не удалось обучить OLS-модель.')
                 return null
             }
-
+            
+            // Средние значения факторов для будущего
             const last24Rows = rowsWithLag.slice(-24)
             const futureFactorsAvg = {}
             const avgFactors = ['full_plan', 'temperature', 'HPP', 'CHP', 'Q_cons', 'Q_exp', 'Q_imp']
@@ -816,12 +989,12 @@ export default {
                 const vals = last24Rows.map(item => this.getFactorValue(item, f)).filter(Number.isFinite)
                 futureFactorsAvg[f] = vals.length ? this.mean(vals) : NaN
             })
-
+            
             const lastDate = new Date(rows[rows.length - 1].timestamp)
             const futureDates = this.generateFutureTimestamps(this.forecastHorizon, lastDate)
             
             const forecastPrices = []
-
+            
             futureDates.forEach(dateStr => {
                 const [datePart, timePart] = dateStr.split(' ')
                 const [year, month, day] = datePart.split('-').map(Number)
@@ -839,9 +1012,12 @@ export default {
                     plan_import: futureFactorsAvg.Q_imp,
                 }
                 
-                const prevPrice = forecastPrices.length ? forecastPrices[forecastPrices.length - 1] : rows[rows.length - 1] ? this.getPrice(rows[rows.length - 1]) : 0
+                const prevPrice = forecastPrices.length
+                    ? forecastPrices[forecastPrices.length - 1]
+                    : rows[rows.length - 1] ? this.getPrice(rows[rows.length - 1]) : 0
+                
                 const itemForFactor = { row: fakeRow, previousPrice: prevPrice }
-
+                
                 const x = usedFactors.map(factor => {
                     const val = this.getFactorValue(itemForFactor, factor)
                     return Number.isFinite(val) ? val : 0
@@ -851,24 +1027,26 @@ export default {
                 const pred = this.dot(designRow, beta)
                 forecastPrices.push(pred)
             })
-
+            
+            // Данные для графика
             const histSlice = rows.slice(-48)
             const histDates = histSlice.map(r => this.getDateTimeLabel(r))
             const histPrices = histSlice.map(r => this.getPrice(r))
-
-            // Формируем данные для графика БЕЗ дублирования
+            
             const chartRows = [
                 ...histDates.map((date, idx) => ({ dateTime: date, actual: histPrices[idx], predicted: null })),
                 ...futureDates.map((date, idx) => ({ dateTime: date, actual: null, predicted: Number(forecastPrices[idx].toFixed(2)) }))
             ]
-
+            
+            const quality = this.getQualityFromR2(backtest?.r2)
+            
             return {
                 forecast: {
                     trainCount: yValues.length,
                     usedFactors: usedFactors.map(v => this.getFactorLabel(v)),
-                    r2: NaN,
-                    qualityColor: 'green-lighten-1',
-                    qualityLabel: 'Прогноз OLS построен',
+                    backtest,
+                    qualityColor: quality.color,
+                    qualityLabel: quality.label,
                     avgPredictedPrice: this.mean(forecastPrices),
                     skippedFactors: expandedFactors.filter(f => !usedFactors.includes(f) && !f.startsWith('month_')).map(v => this.getFactorLabel(v)),
                 },
