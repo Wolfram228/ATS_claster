@@ -835,7 +835,7 @@ export default {
             }
 
             // Строим оба прогноза
-            const arResult = this.buildAutoRegressiveForecast(rows)
+            const arResult = this.(rows)
             const olsResult = this.buildExogenousForecast(rows)
 
             if (arResult) {
@@ -896,8 +896,18 @@ export default {
             const futureDates = this.generateFutureTimestamps(this.forecastHorizon, lastDate)
             
             const chartRows = [
-                ...histDates.map((date, idx) => ({ dateTime: date, actual: histPrices[idx], predicted: null })),
-                ...futureDates.map((date, idx) => ({ dateTime: date, actual: null, predicted: Number(forecastPrices[idx].toFixed(2)) }))
+                ...histDates.map((date, idx) => ({
+                    dateTime: date,
+                    actual: histPrices[idx],
+                    // Последняя историческая точка становится общей:
+                    // на ней заканчивается линия actual и начинается линия predicted
+                    predicted: idx === histDates.length - 1 ? histPrices[idx] : null,
+                })),
+                ...futureDates.map((date, idx) => ({
+                    dateTime: date,
+                    actual: null,
+                    predicted: Number(forecastPrices[idx].toFixed(2)),
+                })),
             ]
             
             const quality = this.getQualityFromR2(backtest?.r2)
@@ -1034,8 +1044,18 @@ export default {
             const histPrices = histSlice.map(r => this.getPrice(r))
             
             const chartRows = [
-                ...histDates.map((date, idx) => ({ dateTime: date, actual: histPrices[idx], predicted: null })),
-                ...futureDates.map((date, idx) => ({ dateTime: date, actual: null, predicted: Number(forecastPrices[idx].toFixed(2)) }))
+                ...histDates.map((date, idx) => ({
+                    dateTime: date,
+                    actual: histPrices[idx],
+                    // Последняя историческая точка становится общей:
+                    // на ней заканчивается линия actual и начинается линия predicted
+                    predicted: idx === histDates.length - 1 ? histPrices[idx] : null,
+                })),
+                ...futureDates.map((date, idx) => ({
+                    dateTime: date,
+                    actual: null,
+                    predicted: Number(forecastPrices[idx].toFixed(2)),
+                })),
             ]
             
             const quality = this.getQualityFromR2(backtest?.r2)
