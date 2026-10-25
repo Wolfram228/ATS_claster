@@ -1139,8 +1139,8 @@ export default {
         getFactorLabel(value) {
             const labels = {
                 full_plan: 'Объём', previousPrice: 'Цена предыдущего часа', hourCycle: 'Циклический час суток',
-                hourSin: 'Час суток sin', hourCos: 'Час суток cos', dayCycle: 'Циклический день недели',
-                daySin: 'День недели sin', dayCos: 'День недели cos', monthDummy: 'Месяц',
+                hourSin: 'Час суток (sin)', hourCos: 'Час суток (cos)', dayCycle: 'Циклический день недели',
+                daySin: 'День недели (sin)', dayCos: 'День недели (cos)', monthDummy: 'Месяц',
                 month_2: 'Февраль', month_3: 'Март', month_4: 'Апрель', month_5: 'Май', month_6: 'Июнь', month_7: 'Июль',
                 month_8: 'Август', month_9: 'Сентябрь', month_10: 'Октябрь', month_11: 'Ноябрь', month_12: 'Декабрь',
                 temperature: 'Температура', HPP: 'Выработка ГЭС', CHP: 'Выработка ТЭС', Q_cons: 'Потребление',
