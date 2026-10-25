@@ -56,6 +56,7 @@ import img2 from '../assets/2.webp'
 import img3 from '../assets/3.webp'
 import img4 from '../assets/4.webp'
 import img5 from '../assets/5.webp'
+import img6 from '../assets/6.webp'
 
 export default {
   name: 'Home',
@@ -105,7 +106,7 @@ export default {
           text: 'Выбирайте факторы, оценивайте линейную модель и оценивайте вклад каждой переменной в прогноз цены.',
           to: '/price-modeling',
           cta: 'Перейти к модели',
-          img: img2,
+          img: img6,
           alt: 'Ветроустановки в поле'
         }
       ]
