@@ -58,7 +58,7 @@
                     </v-col>
                     <v-col cols="12" md="4">
                         <v-btn block min-height="52" color="green-lighten-1" :loading="priceAnalyticsLoading || weatherLoading" :disabled="isDateInvalid" @click="buildForecast">
-                            Построить прогноз (оба метода)
+                            Построить прогноз
                         </v-btn>
                     </v-col>
                 </v-row>
