@@ -117,7 +117,7 @@ export default {
 
 <style scoped>
 /* Контейнер страницы: ширину, отступы по бокам и центрирование
-   теперь регулирует v-container. Здесь оставляем только визуальный стиль. */
+   регулирует v-container. Здесь оставляем только визуальный стиль. */
 .home {
   padding-bottom: 80px;
   box-sizing: border-box;
@@ -227,17 +227,20 @@ export default {
 /* ---------- Modules ---------- */
 .module {
   display: grid;
-  grid-template-columns: 1fr 1.1fr;
-  gap: 72px;
+  /* Текст занимает чуть больше места, картинка — меньше */
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: 64px;
   align-items: center;
-  margin-top: 160px;
+  margin-top: 120px;
 }
-.module--reverse { grid-template-columns: 1.1fr 1fr; }
+.module--reverse {
+  grid-template-columns: 0.85fr 1.15fr;
+}
 .module--reverse .module__text { order: 2; }
 .module--reverse .module__media { order: 1; }
 
 .kicker {
-  margin: 0 0 28px;
+  margin: 0 0 24px;
   display: flex;
   align-items: center;
   gap: 14px;
@@ -253,24 +256,30 @@ export default {
   letter-spacing: 0.06em;
 }
 .module__title {
-  margin: 0 0 24px;
-  font-size: clamp(34px, 4.2vw, 60px);
+  margin: 0 0 20px;
+  font-size: clamp(32px, 3.5vw, 52px);
   line-height: 1.04;
   font-weight: 500;
   letter-spacing: -0.035em;
 }
 .module__desc {
-  margin: 0 0 40px;
+  margin: 0 0 32px;
   max-width: 46ch;
   font-size: 16px;
   line-height: 1.65;
   color: #6b6b6b;
 }
+
+/* --- Картинки --- */
 .module__media {
   border-radius: 32px;
   overflow: hidden;
   background: #f4f4f4;
+  width: 100%;
+  max-width: 480px;
+  justify-self: center;
 }
+
 .module__media img {
   display: block;
   width: 100%;
@@ -280,11 +289,20 @@ export default {
 
 @media (max-width: 1024px) {
   .module,
-  .module--reverse { grid-template-columns: 1fr; gap: 40px; margin-top: 112px; }
+  .module--reverse {
+    grid-template-columns: 1fr;
+    gap: 40px;
+    margin-top: 80px;
+  }
   .module--reverse .module__text,
   .module--reverse .module__media { order: initial; }
   .hero__bottom { flex-direction: column; align-items: flex-start; }
+
+  .module__media {
+    max-width: 100%;
+  }
 }
+
 @media (max-width: 700px) {
   .home { padding-bottom: 60px; }
   .hero, .hero__inner { min-height: 560px; border-radius: 28px; }
