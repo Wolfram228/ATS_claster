@@ -484,11 +484,13 @@ export default {
         },
 
         enrichedRows() {
-            return this.priceAnalyticsRows.map(row => {
-                const key = this.getDateHourKey(row)
-                const temperature = this.temperatureByDateHour[key]
-                return { ...row, temperature: Number.isFinite(temperature) ? temperature : null }
-            })
+            return (this.priceAnalyticsRows || [])
+                .filter(row => row && typeof row === 'object')
+                .map(row => {
+                    const key = this.getDateHourKey(row)
+                    const temperature = this.temperatureByDateHour?.[key]
+                    return { ...row, temperature: Number.isFinite(temperature) ? temperature : null }
+                })
         },
 
         filteredRows() {
@@ -505,7 +507,7 @@ export default {
         temperatureCoverage() {
             const total = this.filteredRows.length
             if (!total) return { loaded: 0, total: 0 }
-            const loaded = this.filteredRows.filter(row => Number.isFinite(this.toNumber(row.temperature))).length
+            const loaded = this.filteredRows.filter(row => Number.isFinite(this.toNumber(row?.temperature))).length
             return { loaded, total }
         },
 
@@ -664,7 +666,7 @@ export default {
         },
 
         getDateHourKey(row) {
-            const date = String(row.timestamp || '').slice(0, 10)
+            const date = String(row?.timestamp || '').slice(0, 10)
             const hour = this.getHour(row)
             if (!date || !Number.isFinite(hour)) return ''
             return `${date}_${hour}`
@@ -688,7 +690,7 @@ export default {
             const variables = []
 
             if (selectedSet.has('temperature')) {
-                const vals = rows.map(r => this.toNumber(r.temperature)).filter(Number.isFinite)
+                const vals = rows.map(r => this.toNumber(r?.temperature)).filter(Number.isFinite)
                 variables.push(this.describeVariable('temperature', 'Температура', vals))
             }
             if (selectedSet.has('full_plan')) {
@@ -811,16 +813,15 @@ export default {
             try {
                 await this.ensureDataLoaded()
                 const rows = this.filteredRows
-                
+
                 if (rows.length < 48) {
                     alert(`Недостаточно данных: ${rows.length} часов. Нужно минимум 48.`)
                     return
                 }
-        
+
                 const arResult = this.buildAutoRegressiveForecast(rows)
                 const olsResult = this.buildExogenousForecast(rows)
-        
-                // Используем spread-оператор для принудительного обновления реактивности Vue
+
                 if (arResult) {
                     this.forecastData = { ...this.forecastData, ar: arResult.forecast }
                     this.forecastChartData = { ...this.forecastChartData, ar: arResult.chartRows }
@@ -850,7 +851,6 @@ export default {
             const totalPoints = prices.length
             const splitIndex = Math.max(Math.floor(totalPoints * 0.8), lags + 5)
 
-            // 1) Бэктест
             const trainX = []
             const trainY = []
             for (let i = lags; i < splitIndex; i++) {
@@ -875,7 +875,6 @@ export default {
                 }
             }
 
-            // 2) Финальная модель на всех данных
             const allX = []
             const allY = []
             for (let i = lags; i < totalPoints; i++) {
@@ -888,7 +887,6 @@ export default {
                 return null
             }
 
-            // 3) Итеративный прогноз в будущее
             const forecastPrices = []
             const history = [...prices]
             for (let step = 0; step < this.forecastHorizon; step++) {
@@ -898,7 +896,6 @@ export default {
                 history.push(nextPrice)
             }
 
-            // 4) Данные для графика: прогноз параллельно с фактом на всём периоде
             const chartRows = []
             for (let i = 0; i < totalPoints; i++) {
                 const row = trainRows[i]
@@ -984,7 +981,6 @@ export default {
             const splitIndex = Math.max(Math.floor(totalPoints * 0.8), 5)
             const featureCount = usedFactors.length
 
-            // 1) Бэктест
             let backtest = null
             if (splitIndex < totalPoints) {
                 const trainSlice = preparedRows.slice(0, splitIndex)
@@ -1012,7 +1008,6 @@ export default {
                 }
             }
 
-            // 2) Финальная модель на всех данных
             const yValues = preparedRows.map(item => item.y)
             const xValues = preparedRows.map(item => item.x)
 
@@ -1033,7 +1028,6 @@ export default {
                 return null
             }
 
-            // 3) Средние значения факторов за последние 24 часа — для будущего
             const last24Rows = rowsWithLag.slice(-24)
             const avgFactors = ['full_plan', 'temperature', 'HPP', 'CHP', 'NPP', 'SES', 'VES', 'other', 'Q_cons', 'Q_exp', 'Q_imp']
             const futureFactorsAvg = {}
@@ -1045,11 +1039,9 @@ export default {
             const lastDate = new Date(trainRows[trainRows.length - 1].timestamp)
             const futureDates = this.generateFutureTimestamps(this.forecastHorizon, lastDate)
 
-            // 4) Прогноз в будущее
             const forecastPrices = []
             futureDates.forEach(dateStr => {
                 const [datePart, timePart] = dateStr.split(' ')
-                const [year, month, day] = datePart.split('-').map(Number)
                 const hour = Number(timePart.split(':')[0])
 
                 const fakeRow = {
@@ -1083,11 +1075,10 @@ export default {
                 forecastPrices.push(this.dot(designRow, beta))
             })
 
-            // 5) Данные для графика: прогноз параллельно с фактом на всём периоде
+            // Данные для графика: используем уже подготовленные item.x (а не пересчитываем)
             const predByTimestamp = new Map()
             preparedRows.forEach(item => {
-                const x = usedFactors.map(f => this.getFactorValue(item, f))
-                const designRow = [1, ...x.map((value, i) => (value - means[i]) / stds[i])]
+                const designRow = [1, ...item.x.map((value, i) => (value - means[i]) / stds[i])]
                 predByTimestamp.set(item.source.timestamp, this.dot(designRow, beta))
             })
 
@@ -1143,52 +1134,51 @@ export default {
 
         calculateOlsCoefficients(xRows, yValues) {
             if (!xRows.length || !xRows[0].length) return null
-            
             const xT = this.transpose(xRows)
             const xTx = this.multiplyMatrices(xT, xRows)
             const xTy = this.multiplyMatrixVector(xT, yValues)
-            
             for (let i = 0; i < xTx.length; i++) xTx[i][i] += 1e-6
-            
             const inverse = this.invertMatrix(xTx)
             if (!inverse) return null
-            
             const beta = this.multiplyMatrixVector(inverse, xTy)
-            
-            // Проверяем, не появились ли NaN после инверсии матрицы
             if (beta.some(value => !Number.isFinite(value))) return null
-            
             return beta
         },
 
-        getPrice(row) { return this.toNumber(row.price_sell ?? row.Price ?? row.price ?? row.priceSell) },
-        getVolume(row) { return this.toNumber(row.full_plan ?? row.volume ?? row.Q_cons ?? row.q_cons) },
+        getPrice(row) { return this.toNumber(row?.price_sell ?? row?.Price ?? row?.price ?? row?.priceSell) },
+        getVolume(row) { return this.toNumber(row?.full_plan ?? row?.volume ?? row?.Q_cons ?? row?.q_cons) },
         getHour(row) {
+            if (!row) return NaN
             const directHour = this.toNumber(row.hour)
             if (Number.isFinite(directHour)) return directHour
             const date = new Date(row.timestamp)
             return Number.isNaN(date.getTime()) ? NaN : date.getHours()
         },
         getDayOfWeek(row) {
+            if (!row) return NaN
             const date = new Date(row.timestamp)
             return Number.isNaN(date.getTime()) ? NaN : date.getDay()
         },
         getMonth(row) {
+            if (!row) return NaN
             const date = new Date(row.timestamp)
             return Number.isNaN(date.getTime()) ? NaN : date.getMonth() + 1
         },
         getDateTimeLabel(row) {
-            const date = row.timestamp || ''
+            const date = row?.timestamp || ''
             const hour = this.getHour(row)
             if (!Number.isFinite(hour)) return date
             return `${date} ${String(hour).padStart(2, '0')}:00`
         },
 
         getFactorValue(item, factor) {
+            if (!item) return NaN
             const row = item.row
+            if (!row) return NaN
+
             if (factor === 'full_plan') return this.getVolume(row)
             if (factor === 'previousPrice') return item.previousPrice
-            if (factor === 'temperature') return this.toNumber(row.temperature)
+            if (factor === 'temperature') return this.toNumber(row?.temperature)
             if (factor === 'price_sell') return this.getPrice(row)
 
             if (factor === 'hourSin') { const hour = this.getHour(row); return Number.isFinite(hour) ? Math.sin((2 * Math.PI * hour) / 24) : NaN }
