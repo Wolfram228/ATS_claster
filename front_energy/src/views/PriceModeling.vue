@@ -28,45 +28,39 @@
                 </v-row>
 
                 <v-row class="mt-4">
-                    <v-col cols="12">
-                        <v-card class="pa-4" elevation="0" rounded="lg" variant="outlined" style="border-color: rgba(0, 0, 0, 0.12)">
-                            <div class="d-flex align-center justify-space-between mb-2">
-                                <div class="text-h6 font-weight-bold">Факторы модели</div>
-                                <v-chip color="blue-grey-lighten-4" variant="flat">Рекомендуемый набор выбран</v-chip>
-                            </div>
-                            <div class="text-body-2 text-grey-darken-1 mb-4" align="left">
-                                Для временных признаков используется циклическое кодирование. Месяц учитывается как дамми-переменная.
-                                Температура подтягивается из внешнего погодного источника по региону и часу.
-                            </div>
+    <v-col cols="12">
+        <v-card class="pa-4" elevation="0" rounded="lg" variant="outlined" style="border-color: rgba(0, 0, 0, 0.12)">
+            <div class="d-flex align-center justify-space-between mb-2">
+                <div class="text-h6 font-weight-bold">Факторы модели</div>
+                <v-chip color="blue-grey-lighten-4" variant="flat">Рекомендуемый набор выбран</v-chip>
+            </div>
+            <div class="text-body-2 text-grey-darken-1 mb-4" align="left">
+                Для временных признаков используется циклическое кодирование. Месяц учитывается как дамми-переменная.
+                Температура подтягивается из внешнего погодного источника по региону и часу.
+            </div>
 
-                            <!-- 4 ключевых фактора (статистика по ним) -->
-                            <v-row class="mb-2">
-                                <v-col v-for="factor in coreFactors" :key="factor.value" cols="12" sm="6" md="3">
-                                    <v-checkbox
-                                        v-model="selectedFactors"
-                                        :label="factor.label"
-                                        :value="factor.value"
-                                        color="blue-lighten-1"
-                                        class="core-factor-checkbox"
-                                        hide-details
-                                    />
-                                </v-col>
-                            </v-row>
-
-                            <!-- Остальные факторы -->
-                            <v-row>
-                                <v-col v-for="factor in otherFactors" :key="factor.value" cols="12" md="6">
-                                    <v-checkbox
-                                        v-model="selectedFactors"
-                                        :label="factor.label"
-                                        :value="factor.value"
-                                        hide-details
-                                    />
-                                </v-col>
-                            </v-row>
-                        </v-card>
-                    </v-col>
-                </v-row>
+            <v-row>
+                <v-col v-for="factor in coreFactors" :key="factor.value" cols="12" md="6">
+                    <v-checkbox
+                        v-model="selectedFactors"
+                        :label="factor.label"
+                        :value="factor.value"
+                        color="blue-lighten-1"
+                        hide-details
+                    />
+                </v-col>
+                <v-col v-for="factor in otherFactors" :key="factor.value" cols="12" md="6">
+                    <v-checkbox
+                        v-model="selectedFactors"
+                        :label="factor.label"
+                        :value="factor.value"
+                        hide-details
+                    />
+                </v-col>
+            </v-row>
+        </v-card>
+    </v-col>
+</v-row>
 
                 <v-row class="mt-4">
                     <v-col cols="12" md="4">
@@ -268,7 +262,7 @@
                     </tr>
                     <tr>
                         <td class="pl-6">R² на тестовой выборке</td>
-                        <td>{{ formatOptional(currentForecast.backtest?.r2, 4) }}</td>
+                       <td>{{ formatOptional(currentForecast.backtest?.r2, 4) }}</td>
                     </tr>
                     <tr>
                         <td class="pl-6">MAE (средняя абсолютная ошибка)</td>
@@ -291,7 +285,7 @@
         <v-card v-if="currentChartRows.length" class="pa-4 mb-4" elevation="1" rounded="lg" variant="outlined" style="border-color: rgba(0, 0, 0, 0.2)">
             <div class="text-h5 font-weight-bold" align="left">График фактической и прогнозной цены</div>
             <div class="text-body-2 text-grey-darken-1 mt-1 mb-4" align="left">
-                Фактические данные за весь выбранный период. Прогноз начинается в последней 20% наблюдений (тестовая выборка) и продолжается в будущее.
+               Фактические данные за весь выбранный период и параллельный прогноз по всей истории. Прогноз продолжается в будущее на заданный горизонт.
             </div>
             <VChart :option="forecastChartOption" style="height: 420px; border: 1px solid rgba(0,0,0,0.2);" />
         </v-card>
@@ -852,7 +846,7 @@ export default {
             const totalPoints = prices.length
             const splitIndex = Math.max(Math.floor(totalPoints * 0.8), lags + 5)
 
-            // 1) Бэктест: обучаем на первых 80%, предсказываем оставшиеся 20%
+            // 1) Бэктест
             const trainX = []
             const trainY = []
             for (let i = lags; i < splitIndex; i++) {
@@ -860,7 +854,6 @@ export default {
                 trainY.push(prices[i])
             }
 
-            let testPredicted = []
             let backtest = null
             if (trainX.length > 0) {
                 const trainBeta = this.calculateOlsCoefficients(trainX, trainY)
@@ -872,13 +865,13 @@ export default {
                         testY.push(prices[i])
                     }
                     if (testX.length > 0) {
-                        testPredicted = testX.map(row => this.dot(row, trainBeta))
+                        const testPredicted = testX.map(row => this.dot(row, trainBeta))
                         backtest = this.computeMetrics(testY, testPredicted)
                     }
                 }
             }
 
-            // 2) Финальная модель на всех данных — для прогноза в будущее
+            // 2) Финальная модель на всех данных
             const allX = []
             const allY = []
             for (let i = lags; i < totalPoints; i++) {
@@ -901,16 +894,19 @@ export default {
                 history.push(nextPrice)
             }
 
-            // 4) Данные для графика — весь период
-            const chartRows = trainRows.map((row, idx) => {
+            // 4) Данные для графика: прогноз параллельно с фактом на всём периоде
+            const chartRows = []
+            for (let i = 0; i < totalPoints; i++) {
+                const row = trainRows[i]
                 const dateTime = this.getDateTimeLabel(row)
-                const actual = prices[idx]
-                const testIdx = idx - splitIndex
-                const predicted = (testIdx >= 0 && testIdx < testPredicted.length)
-                    ? Number(testPredicted[testIdx].toFixed(2))
-                    : null
-                return { dateTime, actual, predicted }
-            })
+                const actual = prices[i]
+                let predicted = null
+                if (i >= lags) {
+                    const lagsSlice = prices.slice(i - lags, i)
+                    predicted = Number(this.dot([1, ...lagsSlice], beta).toFixed(2))
+                }
+                chartRows.push({ dateTime, actual, predicted })
+            }
 
             const lastDate = new Date(trainRows[trainRows.length - 1].timestamp)
             const futureDates = this.generateFutureTimestamps(this.forecastHorizon, lastDate)
@@ -958,7 +954,7 @@ export default {
                 if (factor === 'hourCycle') expandedFactors.push('hourSin', 'hourCos')
                 else if (factor === 'dayCycle') expandedFactors.push('daySin', 'dayCos')
                 else if (factor === 'monthDummy') { for (let month = 2; month <= 12; month++) expandedFactors.push(`month_${month}`) }
-                else if (factor === 'price_sell') { /* пропускаем, это таргет */ }
+                else if (factor === 'price_sell') { /* пропускаем: это таргет */ }
                 else expandedFactors.push(factor)
             }
 
@@ -985,30 +981,29 @@ export default {
             const featureCount = usedFactors.length
 
             // 1) Бэктест
-            let testPredicted = []
             let backtest = null
             if (splitIndex < totalPoints) {
                 const trainSlice = preparedRows.slice(0, splitIndex)
                 const testSlice = preparedRows.slice(splitIndex)
 
-                const means = []
-                const stds = []
+                const btMeans = []
+                const btStds = []
                 for (let j = 0; j < featureCount; j++) {
                     const col = trainSlice.map(r => r.x[j])
                     const m = this.mean(col)
                     const s = this.std(col) || 1
-                    means.push(m)
-                    stds.push(s)
+                    btMeans.push(m)
+                    btStds.push(s)
                 }
 
-                const xTrain = trainSlice.map(r => [1, ...r.x.map((v, i) => (v - means[i]) / stds[i])])
+                const xTrain = trainSlice.map(r => [1, ...r.x.map((v, i) => (v - btMeans[i]) / btStds[i])])
                 const yTrain = trainSlice.map(r => r.y)
-                const xTest = testSlice.map(r => [1, ...r.x.map((v, i) => (v - means[i]) / stds[i])])
+                const xTest = testSlice.map(r => [1, ...r.x.map((v, i) => (v - btMeans[i]) / btStds[i])])
                 const yTest = testSlice.map(r => r.y)
 
                 const trainBeta = this.calculateOlsCoefficients(xTrain, yTrain)
                 if (trainBeta) {
-                    testPredicted = xTest.map(row => this.dot(row, trainBeta))
+                    const testPredicted = xTest.map(row => this.dot(row, trainBeta))
                     backtest = this.computeMetrics(yTest, testPredicted)
                 }
             }
@@ -1034,7 +1029,7 @@ export default {
                 return null
             }
 
-            // Средние значения факторов за последние 24 часа
+            // 3) Средние значения факторов за последние 24 часа — для будущего
             const last24Rows = rowsWithLag.slice(-24)
             const avgFactors = ['full_plan', 'temperature', 'HPP', 'CHP', 'NPP', 'SES', 'VES', 'other', 'Q_cons', 'Q_exp', 'Q_imp']
             const futureFactorsAvg = {}
@@ -1046,7 +1041,7 @@ export default {
             const lastDate = new Date(trainRows[trainRows.length - 1].timestamp)
             const futureDates = this.generateFutureTimestamps(this.forecastHorizon, lastDate)
 
-            // 3) Прогноз в будущее
+            // 4) Прогноз в будущее
             const forecastPrices = []
             futureDates.forEach(dateStr => {
                 const [datePart, timePart] = dateStr.split(' ')
@@ -1084,12 +1079,12 @@ export default {
                 forecastPrices.push(this.dot(designRow, beta))
             })
 
-            // 4) Данные для графика
+            // 5) Данные для графика: прогноз параллельно с фактом на всём периоде
             const predByTimestamp = new Map()
-            preparedRows.forEach((item, idx) => {
-                if (idx >= splitIndex && idx - splitIndex < testPredicted.length) {
-                    predByTimestamp.set(item.source.timestamp, testPredicted[idx - splitIndex])
-                }
+            preparedRows.forEach(item => {
+                const x = usedFactors.map(f => this.getFactorValue(item, f))
+                const designRow = [1, ...x.map((value, i) => (value - means[i]) / stds[i])]
+                predByTimestamp.set(item.source.timestamp, this.dot(designRow, beta))
             })
 
             const chartRows = trainRows.map(row => {
@@ -1196,12 +1191,12 @@ export default {
             }
 
             const aliases = {
-                HPP:   ['plan_GES', 'HPP', 'hpp', 'hydro', 'ges'],
-                CHP:   ['plan_TES', 'CHP', 'chp', 'tes'],
-                NPP:   ['plan_AES', 'NPP', 'npp', 'nuclear', 'aes'],
-                SES:   ['plan_SES', 'SES', 'ses', 'solar'],
-                VES:   ['plan_VES', 'VES', 'ves', 'wind'],
-                other: ['plan_other', 'other', 'other_renewable'],
+                HPP:    ['plan_GES', 'HPP', 'hpp', 'hydro', 'ges'],
+                CHP:    ['plan_TES', 'CHP', 'chp', 'tes'],
+                NPP:    ['plan_AES', 'NPP', 'npp', 'nuclear', 'aes'],
+                SES:    ['plan_SES', 'SES', 'ses', 'solar'],
+                VES:    ['plan_VES', 'VES', 'ves', 'wind'],
+                other:  ['plan_other', 'other', 'other_renewable'],
                 Q_cons: ['plan_consumption', 'Q_cons', 'q_cons', 'consumption'],
                 Q_exp:  ['plan_export', 'Q_exp', 'q_exp', 'export'],
                 Q_imp:  ['plan_import', 'Q_imp', 'q_imp', 'import'],
