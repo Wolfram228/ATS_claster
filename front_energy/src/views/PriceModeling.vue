@@ -811,25 +811,32 @@ export default {
         },
 
         async buildForecast() {
-            await this.ensureDataLoaded()
-            const rows = this.filteredRows
-            if (rows.length < 48) {
-                alert('Недостаточно данных. Нужно минимум 48 часов.')
-                return
-            }
-
-            const arResult = this.buildAutoRegressiveForecast(rows)
-            const olsResult = this.buildExogenousForecast(rows)
-
-            if (arResult) {
-                this.forecastData.ar = arResult.forecast
-                this.forecastChartData.ar = arResult.chartRows
-                this.hourlyForecastData.ar = arResult.hourlyRows
-            }
-            if (olsResult) {
-                this.forecastData.ols = olsResult.forecast
-                this.forecastChartData.ols = olsResult.chartRows
-                this.hourlyForecastData.ols = olsResult.hourlyRows
+            try {
+                await this.ensureDataLoaded()
+                const rows = this.filteredRows
+                
+                if (rows.length < 48) {
+                    alert(`Недостаточно данных: ${rows.length} часов. Нужно минимум 48.`)
+                    return
+                }
+        
+                const arResult = this.buildAutoRegressiveForecast(rows)
+                const olsResult = this.buildExogenousForecast(rows)
+        
+                // Используем spread-оператор для принудительного обновления реактивности Vue
+                if (arResult) {
+                    this.forecastData = { ...this.forecastData, ar: arResult.forecast }
+                    this.forecastChartData = { ...this.forecastChartData, ar: arResult.chartRows }
+                    this.hourlyForecastData = { ...this.hourlyForecastData, ar: arResult.hourlyRows }
+                }
+                if (olsResult) {
+                    this.forecastData = { ...this.forecastData, ols: olsResult.forecast }
+                    this.forecastChartData = { ...this.forecastChartData, ols: olsResult.chartRows }
+                    this.hourlyForecastData = { ...this.hourlyForecastData, ols: olsResult.hourlyRows }
+                }
+            } catch (error) {
+                console.error('Ошибка при построении прогноза:', error)
+                alert('Произошла ошибка: ' + (error.message || error))
             }
         },
 
@@ -1137,15 +1144,24 @@ export default {
             return result
         },
 
-        calculateOlsCoefficients(xRows, yValues) {
+        ccalculateOlsCoefficients(xRows, yValues) {
             if (!xRows.length || !xRows[0].length) return null
+            
             const xT = this.transpose(xRows)
             const xTx = this.multiplyMatrices(xT, xRows)
             const xTy = this.multiplyMatrixVector(xT, yValues)
+            
             for (let i = 0; i < xTx.length; i++) xTx[i][i] += 1e-6
+            
             const inverse = this.invertMatrix(xTx)
             if (!inverse) return null
-            return this.multiplyMatrixVector(inverse, xTy)
+            
+            const beta = this.multiplyMatrixVector(inverse, xTy)
+            
+            // Проверяем, не появились ли NaN после инверсии матрицы
+            if (beta.some(value => !Number.isFinite(value))) return null
+            
+            return beta
         },
 
         getPrice(row) { return this.toNumber(row.price_sell ?? row.Price ?? row.price ?? row.priceSell) },
