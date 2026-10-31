@@ -1,6 +1,3 @@
-# Полный код
-
-```vue
 <template>
     <v-container class="pa-4">
         <!-- Блок 1: Настройки -->
@@ -1144,7 +1141,7 @@ export default {
             return result
         },
 
-        ccalculateOlsCoefficients(xRows, yValues) {
+        calculateOlsCoefficients(xRows, yValues) {
             if (!xRows.length || !xRows[0].length) return null
             
             const xT = this.transpose(xRows)
