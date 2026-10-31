@@ -1,3 +1,6 @@
+# Полный код
+
+```vue
 <template>
     <v-container class="pa-4">
         <!-- Блок 1: Настройки -->
@@ -36,42 +39,62 @@
                                 Температура подтягивается из внешнего погодного источника по региону и часу.
                             </div>
 
+                            <!-- 4 ключевых фактора (статистика по ним) -->
+                            <v-row class="mb-2">
+                                <v-col v-for="factor in coreFactors" :key="factor.value" cols="12" sm="6" md="3">
+                                    <v-checkbox
+                                        v-model="selectedFactors"
+                                        :label="factor.label"
+                                        :value="factor.value"
+                                        color="blue-lighten-1"
+                                        class="core-factor-checkbox"
+                                        hide-details
+                                    />
+                                </v-col>
+                            </v-row>
+
+                            <!-- Остальные факторы -->
                             <v-row>
-                                <v-col v-for="factor in factors" :key="factor.value" cols="12" md="6">
-                                    <v-checkbox v-model="selectedFactors" :label="factor.label" :value="factor.value" hide-details />
+                                <v-col v-for="factor in otherFactors" :key="factor.value" cols="12" md="6">
+                                    <v-checkbox
+                                        v-model="selectedFactors"
+                                        :label="factor.label"
+                                        :value="factor.value"
+                                        hide-details
+                                    />
                                 </v-col>
                             </v-row>
                         </v-card>
                     </v-col>
                 </v-row>
-                
+
                 <v-row class="mt-4">
-                <v-col cols="12" md="4">
-                    <v-select
-                        v-model="forecastHorizon"
-                        :items="forecastHorizonItems"
-                        label="Горизонт прогноза"
-                        hide-details
-                    />
-                </v-col>
-                <v-col cols="12" md="4">
-                    <v-select
-                        v-model="trainingWindow"
-                        :items="trainingWindowItems"
-                        label="Глубина обучения"
-                        hide-details
-                    />
-                </v-col>
-                <v-col cols="12" md="4">
-                    <v-select
-                        v-model="arLags"
-                        :items="arLagsItems"
-                        label="Лаги AR-модели"
-                        hide-details
-                    />
-                </v-col>
-            </v-row>
-                
+                    <v-col cols="12" md="4">
+                        <v-select
+                            v-model="forecastHorizon"
+                            :items="forecastHorizonItems"
+                            label="Горизонт прогноза"
+                            hide-details
+                        />
+                    </v-col>
+                    <v-col cols="12" md="4">
+                        <v-select
+                            v-model="trainingWindow"
+                            :items="trainingWindowItems"
+                            label="Глубина обучения"
+                            hide-details
+                        />
+                    </v-col>
+                    <v-col cols="12" md="4">
+                        <v-select
+                            v-model="arLags"
+                            :items="arLagsItems"
+                            label="Лаги AR-модели"
+                            hide-details
+                        />
+                    </v-col>
+                </v-row>
+
                 <v-row class="mt-4">
                     <v-col cols="12" md="4">
                         <v-btn block min-height="52" color="blue-grey-lighten-1" :loading="priceAnalyticsLoading || weatherLoading" :disabled="isDateInvalid" @click="loadData">
@@ -110,14 +133,14 @@
             Для более устойчивого прогноза рекомендуется выбирать период не менее 7 дней.
         </v-alert>
 
-       <!-- Блок 2: Статистика -->
+        <!-- Блок 2: Статистика -->
         <v-card v-if="statistics" class="pa-4 mb-4" elevation="1" rounded="lg" variant="outlined" style="border-color: rgba(0, 0, 0, 0.2)">
             <div class="text-h5 font-weight-bold" align="left">Описательная статистика</div>
             <div class="text-body-2 text-grey-darken-1 mt-1" align="left">Расчёт выполнен по фактическим данным для выбранного региона.</div>
             <div class="text-body-2 text-grey-darken-1 mt-1 mb-4" align="left">
                 Регион: {{ appliedRegion }} · Период: {{ formatDisplayDate(appliedDateFrom) }} — {{ formatDisplayDate(appliedDateTo) }}
             </div>
-        
+
             <div class="correlation-scroll mt-4">
                 <v-table class="text-center">
                     <thead>
@@ -215,20 +238,19 @@
                     <div class="d-flex align-center flex-shrink-0">
                         <HintFormula>
                             <div style="font-size: 13px; text-align: left; min-width: 200px;">
-                                <strong>Авторегрессия (AR):</strong> Прогноз строится на основе предыдущих 24 часов цены. Не учитывает внешние факторы.<br><br>
-                                <strong>Мультифакторный (OLS):</strong> Использует выбранные факторы. Для будущих периодов факторы берутся как средние за последние 24 часа.
+                                <strong>Авторегрессия (AR):</strong> прогноз на основе {{ arLags }} предыдущих часов цены.<br><br>
+                                <strong>Мультифакторный (OLS):</strong> на основе выбранных факторов; для будущих часов факторы берутся как средние за последние 24 ч.
                             </div>
                         </HintFormula>
                     </div>
                 </div>
-                
-                <!-- Переключатель методов прямо в блоке результата -->
+
                 <v-btn-group density="compact" variant="outlined">
                     <v-btn :color="selectedForecastView === 'ar' ? 'green-lighten-1' : ''" @click="selectedForecastView = 'ar'">Авторегрессия (AR)</v-btn>
                     <v-btn :color="selectedForecastView === 'ols' ? 'green-lighten-1' : ''" @click="selectedForecastView = 'ols'">Мультифакторный (OLS)</v-btn>
                 </v-btn-group>
             </div>
-            
+
             <div class="text-body-2 text-grey-darken-1 mt-1" align="left">
                 Метод: {{ selectedForecastView === 'ar' ? 'Авторегрессия' : 'Множественная линейная регрессия (OLS)' }}.
                 Прогноз на {{ forecastHorizon }} часов вперёд.
@@ -241,7 +263,7 @@
                     <tr v-if="currentForecast.usedFactors"><td class="font-weight-bold">Использованные факторы</td><td>{{ currentForecast.usedFactors.join(', ') }}</td></tr>
                     <tr><td class="font-weight-bold">Исторических данных (часов)</td><td>{{ currentForecast.trainCount }}</td></tr>
                     <tr><td class="font-weight-bold">Горизонт прогноза (часов)</td><td>{{ forecastHorizon }}</td></tr>
-                   <tr>
+                    <tr>
                         <td class="font-weight-bold" colspan="2" style="padding-top: 12px;">Качество модели (backtesting 80/20)</td>
                     </tr>
                     <tr>
@@ -269,7 +291,7 @@
         <v-card v-if="currentChartRows.length" class="pa-4 mb-4" elevation="1" rounded="lg" variant="outlined" style="border-color: rgba(0, 0, 0, 0.2)">
             <div class="text-h5 font-weight-bold" align="left">График фактической и прогнозной цены</div>
             <div class="text-body-2 text-grey-darken-1 mt-1 mb-4" align="left">
-                Сравнение фактической и прогнозной цены. Прогноз начинается после последней фактической точки.
+                Фактические данные за весь выбранный период. Прогноз начинается в последней 20% наблюдений (тестовая выборка) и продолжается в будущее.
             </div>
             <VChart :option="forecastChartOption" style="height: 420px; border: 1px solid rgba(0,0,0,0.2);" />
         </v-card>
@@ -378,16 +400,18 @@ export default {
             selectedRegion: 'Иркутская область',
             targetVariable: 'Цена продажи электроэнергии',
             targetVariables: ['Цена продажи электроэнергии'],
-            
-            selectedForecastView: 'ar', // Переключатель для просмотра результатов
+
+            selectedForecastView: 'ar',
             forecastHorizon: 24,
             forecastHorizonItems: [
                 { title: '12 часов', value: 12 },
                 { title: '24 часа', value: 24 },
                 { title: '48 часов', value: 48 },
                 { title: '72 часа', value: 72 },
+                { title: '1 неделя (168 ч)', value: 168 },
+                { title: '2 недели (336 ч)', value: 336 },
             ],
-            
+
             trainingWindow: 0,
             trainingWindowItems: [
                 { title: 'Весь период', value: 0 },
@@ -395,7 +419,7 @@ export default {
                 { title: 'Последние 14 дней', value: 14 },
                 { title: 'Последние 30 дней', value: 30 },
             ],
-            
+
             arLags: 24,
             arLagsItems: [
                 { title: '12 часов', value: 12 },
@@ -405,21 +429,31 @@ export default {
                 { title: '168 часов (неделя)', value: 168 },
             ],
 
-            factors: [
+            coreFactors: [
+                { label: 'Температура', value: 'temperature' },
                 { label: 'Объём', value: 'full_plan' },
+                { label: 'Цена продажи', value: 'price_sell' },
+                { label: 'Потребление', value: 'Q_cons' },
+            ],
+            otherFactors: [
                 { label: 'Цена предыдущего часа', value: 'previousPrice' },
                 { label: 'Циклический час суток', value: 'hourCycle' },
                 { label: 'Циклический день недели', value: 'dayCycle' },
                 { label: 'Месяц', value: 'monthDummy' },
-                { label: 'Температура', value: 'temperature' },
                 { label: 'Выработка ГЭС', value: 'HPP' },
                 { label: 'Выработка ТЭС', value: 'CHP' },
-                { label: 'Потребление', value: 'Q_cons' },
+                { label: 'Выработка АЭС', value: 'NPP' },
+                { label: 'Выработка СЭС', value: 'SES' },
+                { label: 'Выработка ВЭС', value: 'VES' },
+                { label: 'Выработка прочих ВИЭ', value: 'other' },
                 { label: 'Экспорт', value: 'Q_exp' },
                 { label: 'Импорт', value: 'Q_imp' },
             ],
-            selectedFactors: ['full_plan', 'previousPrice', 'hourCycle', 'dayCycle', 'monthDummy', 'temperature'],
-            
+            selectedFactors: [
+                'temperature', 'full_plan', 'price_sell', 'Q_cons',
+                'previousPrice', 'hourCycle', 'dayCycle', 'monthDummy',
+            ],
+
             hourlyForecastHeaders: [
                 { title: 'Дата и час', key: 'dateTime', align: 'center' },
                 { title: 'Прогнозная цена, руб./МВт·ч', key: 'predictedPrice', align: 'center' },
@@ -429,8 +463,7 @@ export default {
             temperatureByDateHour: {},
             statistics: null,
             correlationMatrix: null,
-            
-            // Хранилища для результатов обоих методов
+
             forecastData: { ar: null, ols: null },
             forecastChartData: { ar: [], ols: [] },
             hourlyForecastData: { ar: [], ols: [] },
@@ -485,11 +518,10 @@ export default {
             return { loaded, total }
         },
 
-        // Вычисляемые свойства для текущего выбранного вида
         currentForecast() {
             return this.forecastData[this.selectedForecastView]
         },
-        
+
         currentChartRows() {
             return this.forecastChartData[this.selectedForecastView]
         },
@@ -507,19 +539,19 @@ export default {
                 xAxis: { type: 'category', data: this.currentChartRows.map(row => row.dateTime) },
                 yAxis: { type: 'value', name: 'руб./МВт·ч' },
                 series: [
-                    { 
-                        name: 'Фактическая цена', 
-                        type: 'line', 
-                        smooth: true, 
+                    {
+                        name: 'Фактическая цена',
+                        type: 'line',
+                        smooth: true,
                         data: this.currentChartRows.map(row => row.actual),
-                        connectNulls: false
+                        connectNulls: false,
                     },
-                    { 
-                        name: 'Прогнозная цена', 
-                        type: 'line', 
-                        smooth: true, 
+                    {
+                        name: 'Прогнозная цена',
+                        type: 'line',
+                        smooth: true,
                         data: this.currentChartRows.map(row => row.predicted),
-                        connectNulls: false
+                        connectNulls: false,
                     },
                 ],
             }
@@ -528,41 +560,39 @@ export default {
 
     methods: {
         ...mapActions(['fetchPriceAnalyticsRows']),
-        
+
         formatOptional(value, digits = 2) {
             if (value === null || value === undefined || !Number.isFinite(Number(value))) return '—'
             return this.formatNumber(value, digits)
         },
-        
+
         getInitialRange() {
             const today = new Date()
             const from = new Date()
             from.setDate(today.getDate() - 14)
             return { from: this.toDateString(from), to: this.toDateString(today) }
         },
+
         getTrainingRows(rows) {
             if (!this.trainingWindow) return rows
             const hours = this.trainingWindow * 24
             if (rows.length <= hours) return rows
             return rows.slice(-hours)
         },
-        
+
         computeMetrics(actuals, predictions) {
             const n = actuals.length
             if (n < 2) return { r2: NaN, mae: NaN, rmse: NaN, n: 0 }
-            
             const errors = actuals.map((a, i) => a - predictions[i])
             const mae = this.mean(errors.map(e => Math.abs(e)))
             const rmse = Math.sqrt(this.mean(errors.map(e => e * e)))
-            
             const meanActual = this.mean(actuals)
             const ssTot = actuals.reduce((s, a) => s + (a - meanActual) ** 2, 0)
             const ssRes = errors.reduce((s, e) => s + e * e, 0)
             const r2 = ssTot ? 1 - ssRes / ssTot : NaN
-            
             return { r2, mae, rmse, n }
         },
-        
+
         getQualityFromR2(r2) {
             if (!Number.isFinite(r2)) return { label: 'Не оценено', color: 'grey-lighten-1' }
             if (r2 >= 0.7) return { label: 'Высокое качество', color: 'green-lighten-1' }
@@ -570,61 +600,7 @@ export default {
             if (r2 >= 0) return { label: 'Низкое качество', color: 'orange-lighten-1' }
             return { label: 'Нестабильная модель', color: 'red-lighten-2' }
         },
-        
-        backtestAR(prices, lags) {
-            if (prices.length < lags + 20) return null
-            
-            const X = []
-            const y = []
-            for (let i = lags; i < prices.length; i++) {
-                X.push([1, ...prices.slice(i - lags, i)])
-                y.push(prices[i])
-            }
-            
-            const splitIndex = Math.max(Math.floor(X.length * 0.8), 5)
-            if (splitIndex >= X.length) return null
-            
-            const beta = this.calculateOlsCoefficients(X.slice(0, splitIndex), y.slice(0, splitIndex))
-            if (!beta) return null
-            
-            const testPredictions = X.slice(splitIndex).map(row => this.dot(row, beta))
-            return this.computeMetrics(y.slice(splitIndex), testPredictions)
-        },
-        
-        backtestOLS(preparedRows) {
-            if (preparedRows.length < 30) return null
-            
-            const featureCount = preparedRows[0].x.length
-            if (!featureCount) return null
-            
-            const splitIndex = Math.max(Math.floor(preparedRows.length * 0.8), 5)
-            if (splitIndex >= preparedRows.length) return null
-            
-            const trainRows = preparedRows.slice(0, splitIndex)
-            const testRows = preparedRows.slice(splitIndex)
-            
-            // means/stds считаем ТОЛЬКО на train, чтобы избежать утечки данных
-            const means = []
-            const stds = []
-            for (let j = 0; j < featureCount; j++) {
-                const col = trainRows.map(r => r.x[j])
-                const m = this.mean(col)
-                const s = this.std(col) || 1
-                means.push(m)
-                stds.push(s)
-            }
-            
-            const xTrain = trainRows.map(r => [1, ...r.x.map((v, i) => (v - means[i]) / stds[i])])
-            const yTrain = trainRows.map(r => r.y)
-            const xTest = testRows.map(r => [1, ...r.x.map((v, i) => (v - means[i]) / stds[i])])
-            const yTest = testRows.map(r => r.y)
-            
-            const beta = this.calculateOlsCoefficients(xTrain, yTrain)
-            if (!beta) return null
-            
-            const predictions = xTest.map(row => this.dot(row, beta))
-            return this.computeMetrics(yTest, predictions)
-        },
+
         toDateString(date) {
             const y = date.getFullYear()
             const m = String(date.getMonth() + 1).padStart(2, '0')
@@ -717,17 +693,27 @@ export default {
                 this.correlationMatrix = null
                 return
             }
-            const priceValues = rows.map(r => this.getPrice(r)).filter(Number.isFinite)
-            const volumeValues = rows.map(r => this.getVolume(r)).filter(Number.isFinite)
-            const temperatureValues = rows.map(r => this.toNumber(r.temperature)).filter(Number.isFinite)
+            const selectedSet = new Set(this.selectedFactors)
+            const variables = []
 
-            this.statistics = {
-                variables: [
-                    this.describeVariable('price_sell', 'Цена продажи', priceValues),
-                    this.describeVariable('full_plan', 'Объём', volumeValues),
-                    this.describeVariable('temperature', 'Температура', temperatureValues),
-                ],
+            if (selectedSet.has('temperature')) {
+                const vals = rows.map(r => this.toNumber(r.temperature)).filter(Number.isFinite)
+                variables.push(this.describeVariable('temperature', 'Температура', vals))
             }
+            if (selectedSet.has('full_plan')) {
+                const vals = rows.map(r => this.getVolume(r)).filter(Number.isFinite)
+                variables.push(this.describeVariable('full_plan', 'Объём', vals))
+            }
+            if (selectedSet.has('price_sell')) {
+                const vals = rows.map(r => this.getPrice(r)).filter(Number.isFinite)
+                variables.push(this.describeVariable('price_sell', 'Цена продажи', vals))
+            }
+            if (selectedSet.has('Q_cons')) {
+                const vals = rows.map(r => this.getFactorValue({ row: r, previousPrice: NaN }, 'Q_cons')).filter(Number.isFinite)
+                variables.push(this.describeVariable('Q_cons', 'Потребление', vals))
+            }
+
+            this.statistics = variables.length ? { variables } : null
             this.buildCorrelationAnalysis(rows)
         },
 
@@ -787,6 +773,10 @@ export default {
             if (selected.includes('temperature')) variables.push({ key: 'temperature', label: 'Температура', values: rowsWithLag.map(item => this.getFactorValue(item, 'temperature')) })
             if (selected.includes('HPP')) variables.push({ key: 'HPP', label: 'ГЭС', values: rowsWithLag.map(item => this.getFactorValue(item, 'HPP')) })
             if (selected.includes('CHP')) variables.push({ key: 'CHP', label: 'ТЭС', values: rowsWithLag.map(item => this.getFactorValue(item, 'CHP')) })
+            if (selected.includes('NPP')) variables.push({ key: 'NPP', label: 'АЭС', values: rowsWithLag.map(item => this.getFactorValue(item, 'NPP')) })
+            if (selected.includes('SES')) variables.push({ key: 'SES', label: 'СЭС', values: rowsWithLag.map(item => this.getFactorValue(item, 'SES')) })
+            if (selected.includes('VES')) variables.push({ key: 'VES', label: 'ВЭС', values: rowsWithLag.map(item => this.getFactorValue(item, 'VES')) })
+            if (selected.includes('other')) variables.push({ key: 'other', label: 'Прочие ВИЭ', values: rowsWithLag.map(item => this.getFactorValue(item, 'other')) })
             if (selected.includes('Q_cons')) variables.push({ key: 'Q_cons', label: 'Потребление', values: rowsWithLag.map(item => this.getFactorValue(item, 'Q_cons')) })
             if (selected.includes('Q_exp')) variables.push({ key: 'Q_exp', label: 'Экспорт', values: rowsWithLag.map(item => this.getFactorValue(item, 'Q_exp')) })
             if (selected.includes('Q_imp')) variables.push({ key: 'Q_imp', label: 'Импорт', values: rowsWithLag.map(item => this.getFactorValue(item, 'Q_imp')) })
@@ -834,7 +824,6 @@ export default {
                 return
             }
 
-            // Строим оба прогноза
             const arResult = this.buildAutoRegressiveForecast(rows)
             const olsResult = this.buildExogenousForecast(rows)
 
@@ -850,34 +839,59 @@ export default {
             }
         },
 
-       buildAutoRegressiveForecast(rows) {
+        buildAutoRegressiveForecast(rows) {
             const lags = this.arLags
             const trainRows = this.getTrainingRows(rows)
-            const prices = trainRows.map(r => this.getPrice(r)).filter(Number.isFinite)
-            
+            const prices = trainRows.map(r => this.getPrice(r))
+
             if (prices.length < lags + 24) {
                 alert(`Недостаточно данных для AR-модели с ${lags} лагами. Нужно минимум ${lags + 24} часов.`)
                 return null
             }
-            
-            // Backtesting на выбранном окне обучения
-            const backtest = this.backtestAR(prices, lags)
-            
-            // Финальная модель — на всех данных окна
-            const X = []
-            const y = []
-            for (let i = lags; i < prices.length; i++) {
-                X.push([1, ...prices.slice(i - lags, i)])
-                y.push(prices[i])
+
+            const totalPoints = prices.length
+            const splitIndex = Math.max(Math.floor(totalPoints * 0.8), lags + 5)
+
+            // 1) Бэктест: обучаем на первых 80%, предсказываем оставшиеся 20%
+            const trainX = []
+            const trainY = []
+            for (let i = lags; i < splitIndex; i++) {
+                trainX.push([1, ...prices.slice(i - lags, i)])
+                trainY.push(prices[i])
             }
-            
-            const beta = this.calculateOlsCoefficients(X, y)
+
+            let testPredicted = []
+            let backtest = null
+            if (trainX.length > 0) {
+                const trainBeta = this.calculateOlsCoefficients(trainX, trainY)
+                if (trainBeta) {
+                    const testX = []
+                    const testY = []
+                    for (let i = splitIndex; i < totalPoints; i++) {
+                        testX.push([1, ...prices.slice(i - lags, i)])
+                        testY.push(prices[i])
+                    }
+                    if (testX.length > 0) {
+                        testPredicted = testX.map(row => this.dot(row, trainBeta))
+                        backtest = this.computeMetrics(testY, testPredicted)
+                    }
+                }
+            }
+
+            // 2) Финальная модель на всех данных — для прогноза в будущее
+            const allX = []
+            const allY = []
+            for (let i = lags; i < totalPoints; i++) {
+                allX.push([1, ...prices.slice(i - lags, i)])
+                allY.push(prices[i])
+            }
+            const beta = this.calculateOlsCoefficients(allX, allY)
             if (!beta) {
                 alert('Не удалось обучить AR-модель.')
                 return null
             }
-            
-            // Итеративный прогноз
+
+            // 3) Итеративный прогноз в будущее
             const forecastPrices = []
             const history = [...prices]
             for (let step = 0; step < this.forecastHorizon; step++) {
@@ -886,32 +900,30 @@ export default {
                 forecastPrices.push(nextPrice)
                 history.push(nextPrice)
             }
-            
-            // Данные для графика
-            const histSlice = rows.slice(-48)
-            const histDates = histSlice.map(r => this.getDateTimeLabel(r))
-            const histPrices = histSlice.map(r => this.getPrice(r))
-            
-            const lastDate = new Date(rows[rows.length - 1].timestamp)
+
+            // 4) Данные для графика — весь период
+            const chartRows = trainRows.map((row, idx) => {
+                const dateTime = this.getDateTimeLabel(row)
+                const actual = prices[idx]
+                const testIdx = idx - splitIndex
+                const predicted = (testIdx >= 0 && testIdx < testPredicted.length)
+                    ? Number(testPredicted[testIdx].toFixed(2))
+                    : null
+                return { dateTime, actual, predicted }
+            })
+
+            const lastDate = new Date(trainRows[trainRows.length - 1].timestamp)
             const futureDates = this.generateFutureTimestamps(this.forecastHorizon, lastDate)
-            
-            const chartRows = [
-                ...histDates.map((date, idx) => ({
-                    dateTime: date,
-                    actual: histPrices[idx],
-                    // Последняя историческая точка становится общей:
-                    // на ней заканчивается линия actual и начинается линия predicted
-                    predicted: idx === histDates.length - 1 ? histPrices[idx] : null,
-                })),
-                ...futureDates.map((date, idx) => ({
+            futureDates.forEach((date, idx) => {
+                chartRows.push({
                     dateTime: date,
                     actual: null,
                     predicted: Number(forecastPrices[idx].toFixed(2)),
-                })),
-            ]
-            
+                })
+            })
+
             const quality = this.getQualityFromR2(backtest?.r2)
-            
+
             return {
                 forecast: {
                     trainCount: prices.length,
@@ -926,34 +938,35 @@ export default {
                 hourlyRows: futureDates.map((date, idx) => ({
                     dateTime: date,
                     predictedPrice: this.formatNumber(forecastPrices[idx]),
-                }))
+                })),
             }
         },
 
         buildExogenousForecast(rows) {
             const trainRows = this.getTrainingRows(rows)
-            
+
             const rowsWithLag = trainRows.map((row, index) => {
                 const previousRow = index > 0 ? trainRows[index - 1] : null
                 const previousPrice = previousRow ? this.getPrice(previousRow) : NaN
                 return { row, previousPrice }
             })
-            
+
             const selected = [...this.selectedFactors]
             const expandedFactors = []
-            
+
             for (const factor of selected) {
                 if (factor === 'hourCycle') expandedFactors.push('hourSin', 'hourCos')
                 else if (factor === 'dayCycle') expandedFactors.push('daySin', 'dayCos')
                 else if (factor === 'monthDummy') { for (let month = 2; month <= 12; month++) expandedFactors.push(`month_${month}`) }
+                else if (factor === 'price_sell') { /* пропускаем, это таргет */ }
                 else expandedFactors.push(factor)
             }
-            
+
             const usedFactors = expandedFactors.filter(factor => {
                 const values = rowsWithLag.map(item => this.getFactorValue(item, factor)).filter(value => Number.isFinite(value))
                 return values.length >= 24 && new Set(values).size > 1
             })
-            
+
             const preparedRows = rowsWithLag
                 .map(item => {
                     const y = this.getPrice(item.row)
@@ -961,55 +974,85 @@ export default {
                     return { y, x, source: item.row }
                 })
                 .filter(item => Number.isFinite(item.y) && item.x.every(value => Number.isFinite(value)))
-            
+
             if (preparedRows.length < 24) {
                 alert('Недостаточно данных для OLS-модели с выбранными факторами.')
                 return null
             }
-            
-            // Backtesting
-            const backtest = this.backtestOLS(preparedRows)
-            
-            // Финальная модель на всех данных окна
+
+            const totalPoints = preparedRows.length
+            const splitIndex = Math.max(Math.floor(totalPoints * 0.8), 5)
+            const featureCount = usedFactors.length
+
+            // 1) Бэктест
+            let testPredicted = []
+            let backtest = null
+            if (splitIndex < totalPoints) {
+                const trainSlice = preparedRows.slice(0, splitIndex)
+                const testSlice = preparedRows.slice(splitIndex)
+
+                const means = []
+                const stds = []
+                for (let j = 0; j < featureCount; j++) {
+                    const col = trainSlice.map(r => r.x[j])
+                    const m = this.mean(col)
+                    const s = this.std(col) || 1
+                    means.push(m)
+                    stds.push(s)
+                }
+
+                const xTrain = trainSlice.map(r => [1, ...r.x.map((v, i) => (v - means[i]) / stds[i])])
+                const yTrain = trainSlice.map(r => r.y)
+                const xTest = testSlice.map(r => [1, ...r.x.map((v, i) => (v - means[i]) / stds[i])])
+                const yTest = testSlice.map(r => r.y)
+
+                const trainBeta = this.calculateOlsCoefficients(xTrain, yTrain)
+                if (trainBeta) {
+                    testPredicted = xTest.map(row => this.dot(row, trainBeta))
+                    backtest = this.computeMetrics(yTest, testPredicted)
+                }
+            }
+
+            // 2) Финальная модель на всех данных
             const yValues = preparedRows.map(item => item.y)
             const xValues = preparedRows.map(item => item.x)
-            
+
             const means = []
             const stds = []
-            for (let j = 0; j < usedFactors.length; j++) {
+            for (let j = 0; j < featureCount; j++) {
                 const column = xValues.map(row => row[j])
-                const mean = this.mean(column)
-                const std = this.std(column) || 1
-                means.push(mean)
-                stds.push(std)
+                const m = this.mean(column)
+                const s = this.std(column) || 1
+                means.push(m)
+                stds.push(s)
             }
-            
-            const design = xValues.map(row => [1, ...row.map((value, index) => (value - means[index]) / stds[index])])
+
+            const design = xValues.map(row => [1, ...row.map((value, i) => (value - means[i]) / stds[i])])
             const beta = this.calculateOlsCoefficients(design, yValues)
             if (!beta) {
                 alert('Не удалось обучить OLS-модель.')
                 return null
             }
-            
-            // Средние значения факторов для будущего
+
+            // Средние значения факторов за последние 24 часа
             const last24Rows = rowsWithLag.slice(-24)
+            const avgFactors = ['full_plan', 'temperature', 'HPP', 'CHP', 'NPP', 'SES', 'VES', 'other', 'Q_cons', 'Q_exp', 'Q_imp']
             const futureFactorsAvg = {}
-            const avgFactors = ['full_plan', 'temperature', 'HPP', 'CHP', 'Q_cons', 'Q_exp', 'Q_imp']
             avgFactors.forEach(f => {
                 const vals = last24Rows.map(item => this.getFactorValue(item, f)).filter(Number.isFinite)
                 futureFactorsAvg[f] = vals.length ? this.mean(vals) : NaN
             })
-            
-            const lastDate = new Date(rows[rows.length - 1].timestamp)
+
+            const lastDate = new Date(trainRows[trainRows.length - 1].timestamp)
             const futureDates = this.generateFutureTimestamps(this.forecastHorizon, lastDate)
-            
+
+            // 3) Прогноз в будущее
             const forecastPrices = []
-            
             futureDates.forEach(dateStr => {
                 const [datePart, timePart] = dateStr.split(' ')
                 const [year, month, day] = datePart.split('-').map(Number)
                 const hour = Number(timePart.split(':')[0])
-                
+
                 const fakeRow = {
                     timestamp: dateStr,
                     hour: hour,
@@ -1017,49 +1060,57 @@ export default {
                     full_plan: futureFactorsAvg.full_plan,
                     plan_GES: futureFactorsAvg.HPP,
                     plan_TES: futureFactorsAvg.CHP,
+                    plan_AES: futureFactorsAvg.NPP,
+                    plan_SES: futureFactorsAvg.SES,
+                    plan_VES: futureFactorsAvg.VES,
+                    plan_other: futureFactorsAvg.other,
                     plan_consumption: futureFactorsAvg.Q_cons,
                     plan_export: futureFactorsAvg.Q_exp,
                     plan_import: futureFactorsAvg.Q_imp,
                 }
-                
+
                 const prevPrice = forecastPrices.length
                     ? forecastPrices[forecastPrices.length - 1]
-                    : rows[rows.length - 1] ? this.getPrice(rows[rows.length - 1]) : 0
-                
+                    : trainRows[trainRows.length - 1] ? this.getPrice(trainRows[trainRows.length - 1]) : 0
+
                 const itemForFactor = { row: fakeRow, previousPrice: prevPrice }
-                
+
                 const x = usedFactors.map(factor => {
                     const val = this.getFactorValue(itemForFactor, factor)
                     return Number.isFinite(val) ? val : 0
                 })
-                
-                const designRow = [1, ...x.map((value, index) => (value - means[index]) / stds[index])]
-                const pred = this.dot(designRow, beta)
-                forecastPrices.push(pred)
+
+                const designRow = [1, ...x.map((value, i) => (value - means[i]) / stds[i])]
+                forecastPrices.push(this.dot(designRow, beta))
             })
-            
-            // Данные для графика
-            const histSlice = rows.slice(-48)
-            const histDates = histSlice.map(r => this.getDateTimeLabel(r))
-            const histPrices = histSlice.map(r => this.getPrice(r))
-            
-            const chartRows = [
-                ...histDates.map((date, idx) => ({
-                    dateTime: date,
-                    actual: histPrices[idx],
-                    // Последняя историческая точка становится общей:
-                    // на ней заканчивается линия actual и начинается линия predicted
-                    predicted: idx === histDates.length - 1 ? histPrices[idx] : null,
-                })),
-                ...futureDates.map((date, idx) => ({
+
+            // 4) Данные для графика
+            const predByTimestamp = new Map()
+            preparedRows.forEach((item, idx) => {
+                if (idx >= splitIndex && idx - splitIndex < testPredicted.length) {
+                    predByTimestamp.set(item.source.timestamp, testPredicted[idx - splitIndex])
+                }
+            })
+
+            const chartRows = trainRows.map(row => {
+                const dateTime = this.getDateTimeLabel(row)
+                const actual = this.getPrice(row)
+                const predicted = predByTimestamp.has(row.timestamp)
+                    ? Number(predByTimestamp.get(row.timestamp).toFixed(2))
+                    : null
+                return { dateTime, actual, predicted }
+            })
+
+            futureDates.forEach((date, idx) => {
+                chartRows.push({
                     dateTime: date,
                     actual: null,
                     predicted: Number(forecastPrices[idx].toFixed(2)),
-                })),
-            ]
-            
+                })
+            })
+
             const quality = this.getQualityFromR2(backtest?.r2)
-            
+
             return {
                 forecast: {
                     trainCount: yValues.length,
@@ -1074,7 +1125,7 @@ export default {
                 hourlyRows: futureDates.map((date, idx) => ({
                     dateTime: date,
                     predictedPrice: this.formatNumber(forecastPrices[idx]),
-                }))
+                })),
             }
         },
 
@@ -1092,6 +1143,7 @@ export default {
         },
 
         calculateOlsCoefficients(xRows, yValues) {
+            if (!xRows.length || !xRows[0].length) return null
             const xT = this.transpose(xRows)
             const xTx = this.multiplyMatrices(xT, xRows)
             const xTy = this.multiplyMatrixVector(xT, yValues)
@@ -1129,22 +1181,30 @@ export default {
             if (factor === 'full_plan') return this.getVolume(row)
             if (factor === 'previousPrice') return item.previousPrice
             if (factor === 'temperature') return this.toNumber(row.temperature)
+            if (factor === 'price_sell') return this.getPrice(row)
+
             if (factor === 'hourSin') { const hour = this.getHour(row); return Number.isFinite(hour) ? Math.sin((2 * Math.PI * hour) / 24) : NaN }
             if (factor === 'hourCos') { const hour = this.getHour(row); return Number.isFinite(hour) ? Math.cos((2 * Math.PI * hour) / 24) : NaN }
             if (factor === 'daySin') { const day = this.getDayOfWeek(row); return Number.isFinite(day) ? Math.sin((2 * Math.PI * day) / 7) : NaN }
             if (factor === 'dayCos') { const day = this.getDayOfWeek(row); return Number.isFinite(day) ? Math.cos((2 * Math.PI * day) / 7) : NaN }
+
             if (factor.startsWith('month_')) {
                 const monthNumber = Number(factor.replace('month_', ''))
                 const currentMonth = this.getMonth(row)
                 if (!Number.isFinite(currentMonth) || !Number.isFinite(monthNumber)) return NaN
                 return currentMonth === monthNumber ? 1 : 0
             }
+
             const aliases = {
-                HPP: ['plan_GES', 'HPP', 'hpp', 'hydro', 'ges'],
-                CHP: ['plan_TES', 'CHP', 'NPP', 'chp', 'npp', 'tes'],
+                HPP:   ['plan_GES', 'HPP', 'hpp', 'hydro', 'ges'],
+                CHP:   ['plan_TES', 'CHP', 'chp', 'tes'],
+                NPP:   ['plan_AES', 'NPP', 'npp', 'nuclear', 'aes'],
+                SES:   ['plan_SES', 'SES', 'ses', 'solar'],
+                VES:   ['plan_VES', 'VES', 'ves', 'wind'],
+                other: ['plan_other', 'other', 'other_renewable'],
                 Q_cons: ['plan_consumption', 'Q_cons', 'q_cons', 'consumption'],
-                Q_exp: ['plan_export', 'Q_exp', 'q_exp', 'export'],
-                Q_imp: ['plan_import', 'Q_imp', 'q_imp', 'import'],
+                Q_exp:  ['plan_export', 'Q_exp', 'q_exp', 'export'],
+                Q_imp:  ['plan_import', 'Q_imp', 'q_imp', 'import'],
             }
             const fields = aliases[factor] || [factor]
             for (const field of fields) {
@@ -1158,13 +1218,29 @@ export default {
 
         getFactorLabel(value) {
             const labels = {
-                full_plan: 'Объём', previousPrice: 'Цена предыдущего часа', hourCycle: 'Циклический час суток',
-                hourSin: 'Час суток (sin)', hourCos: 'Час суток (cos)', dayCycle: 'Циклический день недели',
-                daySin: 'День недели (sin)', dayCos: 'День недели (cos)', monthDummy: 'Месяц',
-                month_2: 'Февраль', month_3: 'Март', month_4: 'Апрель', month_5: 'Май', month_6: 'Июнь', month_7: 'Июль',
-                month_8: 'Август', month_9: 'Сентябрь', month_10: 'Октябрь', month_11: 'Ноябрь', month_12: 'Декабрь',
-                temperature: 'Температура', HPP: 'Выработка ГЭС', CHP: 'Выработка ТЭС', Q_cons: 'Потребление',
-                Q_exp: 'Экспорт', Q_imp: 'Импорт',
+                full_plan: 'Объём',
+                previousPrice: 'Цена предыдущего часа',
+                hourCycle: 'Циклический час суток',
+                hourSin: 'Час суток (sin)',
+                hourCos: 'Час суток (cos)',
+                dayCycle: 'Циклический день недели',
+                daySin: 'День недели (sin)',
+                dayCos: 'День недели (cos)',
+                monthDummy: 'Месяц',
+                month_2: 'Февраль', month_3: 'Март', month_4: 'Апрель', month_5: 'Май',
+                month_6: 'Июнь', month_7: 'Июль', month_8: 'Август', month_9: 'Сентябрь',
+                month_10: 'Октябрь', month_11: 'Ноябрь', month_12: 'Декабрь',
+                temperature: 'Температура',
+                HPP: 'Выработка ГЭС',
+                CHP: 'Выработка ТЭС',
+                NPP: 'Выработка АЭС',
+                SES: 'Выработка СЭС',
+                VES: 'Выработка ВЭС',
+                other: 'Выработка прочих ВИЭ',
+                Q_cons: 'Потребление',
+                Q_exp: 'Экспорт',
+                Q_imp: 'Импорт',
+                price_sell: 'Цена продажи',
             }
             return labels[value] || value
         },
@@ -1176,6 +1252,7 @@ export default {
             const number = Number(normalized)
             return Number.isFinite(number) ? number : NaN
         },
+
         sum(values) { return values.reduce((acc, value) => acc + value, 0) },
         mean(values) { return values.length ? this.sum(values) / values.length : 0 },
         std(values) {
@@ -1215,6 +1292,7 @@ export default {
             const s = this.std(values)
             return n * (n + 1) / ((n - 1) * (n - 2) * (n - 3)) * this.sum(values.map(x => ((x - m) / s) ** 4)) - 3 * (n - 1) ** 2 / ((n - 2) * (n - 3))
         },
+
         formatDisplayDate(iso) {
             if (!iso) return ''
             const match = String(iso).match(/^(\d{4})-(\d{2})-(\d{2})/)
@@ -1278,20 +1356,17 @@ export default {
 :deep(.v-field) { border-radius: 8px; }
 :deep(.v-selection-control__input) { transform: scale(0.95); }
 
-/* Синхронизируем выравнивание заголовков и данных в таблицах */
 .correlation-scroll :deep(th),
 .correlation-scroll :deep(td) {
     text-align: center;
 }
-
-/* Первая колонка (название показателя/переменной) — по левому краю */
 .correlation-scroll :deep(th:first-child),
 .correlation-scroll :deep(td:first-child) {
     text-align: left;
 }
 
-/* Фикс для HintFormula */
-.d-flex.align-center.flex-shrink-0 {
-    flex-shrink: 0 !important;
+/* Цвет чекбоксов для 4 ключевых факторов — как у кнопки «Показать статистику» */
+.core-factor-checkbox :deep(.v-selection-control__input) > .v-icon {
+    color: rgb(66, 165, 245) !important; /* blue-lighten-1 */
 }
 </style>
