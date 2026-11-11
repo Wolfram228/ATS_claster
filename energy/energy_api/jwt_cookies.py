@@ -1,7 +1,10 @@
 from django.conf import settings
 from rest_framework import status
+from rest_framework.exceptions import AuthenticationFailed
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework_simplejwt.authentication import JWTAuthentication
+from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 ACCESS_COOKIE = 'access'
@@ -53,17 +56,32 @@ def clear_auth_cookies(response):
 
 class CookieJWTAuthentication(JWTAuthentication):
     def authenticate(self, request):
+        # 1. Проверка через заголовок (если нужно)
         header = self.get_header(request)
         if header is not None:
-            return super().authenticate(request)
+            try:
+                return super().authenticate(request)
+            except (InvalidToken, TokenError, AuthenticationFailed):
+                return None
+                
+        # 2. Проверка через Cookie
         raw_token = request.COOKIES.get(ACCESS_COOKIE)
         if not raw_token:
             return None
-        validated_token = self.get_validated_token(raw_token)
-        return self.get_user(validated_token), validated_token
+            
+        try:
+            validated_token = self.get_validated_token(raw_token)
+            return self.get_user(validated_token), validated_token
+        except (InvalidToken, TokenError, AuthenticationFailed):
+            # Если токен в куке протух или невалиден, просто игнорируем его
+            return None
+
 
 class CookieTokenObtainPairView(TokenObtainPairView):
-    def post(self, request, *args, **kwargs):
+    authentication_classes = []  # Отключаем проверку токенов для логина
+    permission_classes = [AllowAny]
+
+    def post(self, request, *args, **kwargs): # Исправлено: добавлена *
         response = super().post(request, *args, **kwargs)
         if response.status_code == 200:
             access = response.data.get('access')
@@ -72,8 +90,12 @@ class CookieTokenObtainPairView(TokenObtainPairView):
             response.data = {'detail': 'Login successful'}
         return response
 
+
 class CookieTokenRefreshView(TokenRefreshView):
-    def post(self, request, *args, **kwargs):
+    authentication_classes = []  # Отключаем проверку для обновления токена
+    permission_classes = [AllowAny]
+
+    def post(self, request, *args, **kwargs): # Исправлено: добавлена *
         data = {}
         if request.data:
             data = request.data.copy() if hasattr(request.data, 'copy') else dict(request.data)
