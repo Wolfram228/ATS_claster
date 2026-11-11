@@ -556,7 +556,11 @@ export default {
             return {
                 tooltip: { trigger: 'axis' },
                 legend: { top: 0 },
-                grid: { left: 50, right: 20, top: 60, bottom: 50 },
+                grid: { left: 50, right: 20, top: 60, bottom: 70 },
+                dataZoom: [
+                    { type: 'inside', xAxisIndex: 0, filterMode: 'filter', zoomOnMouseWheel: true, moveOnMouseMove: true },
+                    { type: 'slider', xAxisIndex: 0, filterMode: 'filter', height: 18, bottom: 8 },
+                ],
                 xAxis: {
                     type: 'category',
                     data: buckets,
@@ -588,7 +592,11 @@ export default {
             return {
                 tooltip: { trigger: 'axis' },
                 legend: { top: 0 },
-                grid: { left: 50, right: 20, top: 60, bottom: 50 },
+                grid: { left: 50, right: 20, top: 60, bottom: 70 },
+                dataZoom: [
+                    { type: 'inside', xAxisIndex: 0, filterMode: 'filter', zoomOnMouseWheel: true, moveOnMouseMove: true },
+                    { type: 'slider', xAxisIndex: 0, filterMode: 'filter', height: 18, bottom: 8 },
+                ],
                 xAxis: {
                     type: 'category',
                     data: buckets,
