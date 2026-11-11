@@ -18,7 +18,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet
 from rest_framework.permissions import IsAuthenticated, AllowAny
-from rest_framework_simplejwt.authentication import JWTAuthentication
+from energy_api.jwt_cookies import CookieJWTAuthentication
 
 from energy_api.models import ElecReport, LoadHistory, UserProfile
 from energy_api.serializers import ElecReportSerializer, LoadHistorySerializer, UserSerializer, UserProfileSerializer
@@ -27,7 +27,7 @@ from energy_api.serializers import ElecReportSerializer, LoadHistorySerializer, 
 class EnergyApiViewSet(GenericViewSet):
     queryset = ElecReport.objects.all()
     serializer_class = ElecReportSerializer
-    authentication_classes = [JWTAuthentication]
+    authentication_classes = [CookieJWTAuthentication]
 
     @action(methods=['GET'], url_path="check-login", detail=False, permission_classes=[AllowAny])
     def check_login(self, request, *args, **kwargs):
