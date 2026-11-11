@@ -31,7 +31,7 @@ export function getSavedUser() {
   }
 }
 
-export function clearUser() {
+export function clearTokens() {
   localStorage.removeItem(USER_KEY)
   localStorage.removeItem(AUTH_FLAG_KEY)
 }
@@ -61,7 +61,7 @@ export async function refreshAccess() {
       setAuthFlag(true);
     } catch (error) {
       setAuthFlag(false);
-      clearUser();
+     clearTokens();
       // Сообщаем приложению, что сессия истекла
       window.dispatchEvent(new Event('session-expired'));
       throw error;
@@ -149,7 +149,7 @@ export async function logout() {
       },
     });
   } finally {
-    clearUser();
+    clearTokens();
   }
 }
 
@@ -202,7 +202,7 @@ export async function checkAuth() {
     const response = await authFetch('/api/auth/profile/')
     
     if (!response.ok) {
-      clearUser()
+      clearTokens()
       return false
     }
     
