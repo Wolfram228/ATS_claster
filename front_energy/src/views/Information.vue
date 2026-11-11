@@ -202,7 +202,10 @@ const generatorFields = [
     { key: "plan_VES", label: "ВЭС" },
     { key: "plan_other", label: "прочие ВИЭ" },
 ]
-
+const timeAxisZoom = [
+    { type: 'inside', xAxisIndex: 0, filterMode: 'filter', zoomOnMouseWheel: true, moveOnMouseMove: true },
+    { type: 'slider', xAxisIndex: 0, filterMode: 'filter', height: 18, bottom: 8 },
+]
 export default {
     components: { InfoCard },
 
@@ -520,6 +523,8 @@ export default {
                 legend: {
                     type: 'scroll',
                 },
+                 grid: { left: 60, right: 20, top: 50, bottom: 70 },
+                dataZoom: timeAxisZoom,
                 xAxis: {
                     type: 'category',
                     data: dates,
@@ -567,6 +572,8 @@ export default {
                         return `${date}<br>${lines.join("<br>")}`
                     },
                 },
+                grid: { left: 60, right: 20, top: 50, bottom: 70 },
+                dataZoom: timeAxisZoom,
                 xAxis: {
                     type: "category",
                     data: dates,
@@ -654,6 +661,8 @@ export default {
                 legend: {
                     type: 'scroll',
                 },
+                grid: { left: 70, right: 70, top: 50, bottom: 70 },
+                dataZoom: timeAxisZoom,
                 xAxis: {
                     type: 'category',
                     data: dates,
