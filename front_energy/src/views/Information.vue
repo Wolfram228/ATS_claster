@@ -572,6 +572,7 @@ export default {
                         })
                         return `${date}<br>${lines.join("<br>")}`
                     },
+                },
                     legend: {
                     top: 0, 
                 },
