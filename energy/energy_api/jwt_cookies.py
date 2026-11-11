@@ -5,7 +5,6 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
-from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 ACCESS_COOKIE = 'access'
 REFRESH_COOKIE = 'refresh'
@@ -54,9 +53,9 @@ def clear_auth_cookies(response):
         response.delete_cookie(name, path=flags['path'], samesite=flags['samesite'])
     return response
 
+
 class CookieJWTAuthentication(JWTAuthentication):
     def authenticate(self, request):
-        # 1. Проверка через заголовок (если нужно)
         header = self.get_header(request)
         if header is not None:
             try:
@@ -64,7 +63,6 @@ class CookieJWTAuthentication(JWTAuthentication):
             except (InvalidToken, TokenError, AuthenticationFailed):
                 return None
                 
-        # 2. Проверка через Cookie
         raw_token = request.COOKIES.get(ACCESS_COOKIE)
         if not raw_token:
             return None
@@ -73,15 +71,20 @@ class CookieJWTAuthentication(JWTAuthentication):
             validated_token = self.get_validated_token(raw_token)
             return self.get_user(validated_token), validated_token
         except (InvalidToken, TokenError, AuthenticationFailed):
-            # Если токен в куке протух или невалиден, просто игнорируем его
             return None
 
 
+# ==========================================
+# ВАЖНО: Импорт ниже перенесен сюда, чтобы избежать Circular Import
+# ==========================================
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+
+
 class CookieTokenObtainPairView(TokenObtainPairView):
-    authentication_classes = []  # Отключаем проверку токенов для логина
+    authentication_classes = [] 
     permission_classes = [AllowAny]
 
-    def post(self, request, *args, **kwargs): # Исправлено: добавлена *
+    def post(self, request, *args, **kwargs):
         response = super().post(request, *args, **kwargs)
         if response.status_code == 200:
             access = response.data.get('access')
@@ -92,10 +95,10 @@ class CookieTokenObtainPairView(TokenObtainPairView):
 
 
 class CookieTokenRefreshView(TokenRefreshView):
-    authentication_classes = []  # Отключаем проверку для обновления токена
+    authentication_classes = []
     permission_classes = [AllowAny]
 
-    def post(self, request, *args, **kwargs): # Исправлено: добавлена *
+    def post(self, request, *args, **kwargs):
         data = {}
         if request.data:
             data = request.data.copy() if hasattr(request.data, 'copy') else dict(request.data)
