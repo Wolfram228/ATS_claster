@@ -111,11 +111,20 @@ export async function loginUser(credentials) {
     body: JSON.stringify(credentials),
   });
 
-  if (!response.ok) {
-    throw new Error('Не удалось выполнить вход');
+  // Пытаемся прочитать ответ от сервера (там может быть текст ошибки)
+  let data = {};
+  try {
+    data = await response.json();
+  } catch (e) {
+    console.error("Не удалось прочитать JSON от сервера");
   }
 
-  const data = await response.json();
+  if (!response.ok) {
+    // Если бэкенд прислал detail (например, "No active account found"), покажем его
+    const errorMsg = data.detail || data.error || `Ошибка сервера: ${response.status}`;
+    throw new Error(errorMsg);
+  }
+
   setAuthFlag(true);
   return data;
 }
