@@ -4,7 +4,10 @@ from rest_framework import routers
 
 # ИЗМЕНЕНИЕ 1: Оставили только TokenVerifyView и импортировали свои классы из jwt_cookies
 from rest_framework_simplejwt.views import TokenVerifyView
-from energy_api.jwt_cookies import CookieTokenObtainPairView, CookieTokenRefreshView
+from energy_api.views_auth import (
+    register, profile, logout, change_password, 
+    CookieTokenObtainPairView, CookieTokenRefreshView
+)
 
 from energy_api import views
 from energy_api.views_auth import register, profile, logout, change_password
