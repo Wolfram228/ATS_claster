@@ -553,19 +553,63 @@ export default {
             return this.hourlyForecastData[this.selectedForecastView]
         },
 
-        forecastChartOption() {
+       forecastChartOption() {
             return {
-                tooltip: { trigger: 'axis' },
+                tooltip: { 
+                    trigger: 'axis',
+                    axisPointer: { type: 'cross' } // Перекрестие при наведении
+                },
                 legend: { top: 0 },
-                grid: { left: 60, right: 25, top: 60, bottom: 70 },
-                dataZoom: [{ type: 'inside' }, { type: 'slider', bottom: 20 }],
-                xAxis: { type: 'category', data: this.currentChartRows.map(row => row.dateTime) },
-                yAxis: { type: 'value', name: 'руб./МВт·ч' },
+                // Увеличиваем отступы, чтобы поместились инструменты сверху и ползунок снизу
+                grid: { left: 60, right: 25, top: 80, bottom: 80 },
+                
+                // Инструменты для выделения области
+                toolbox: {
+                    show: true,
+                    right: 20,
+                    top: 0,
+                    feature: {
+                        dataZoom: {
+                            yAxisIndex: 'none',
+                            title: { zoom: 'Выделить область', back: 'Сбросить выделение' }
+                        },
+                        restore: { title: 'Сбросить масштаб' }
+                    }
+                },
+                
+                // Ползунок и зум
+                dataZoom: [
+                    { 
+                        type: 'inside', 
+                        xAxisIndex: 0,
+                        filterMode: 'none'
+                    },
+                    { 
+                        type: 'slider', 
+                        xAxisIndex: 0,
+                        filterMode: 'none',
+                        bottom: 20,
+                        height: 32,
+                        borderColor: 'rgba(0,0,0,0.2)',
+                        fillerColor: 'rgba(144, 202, 249, 0.3)' // Приятный голубой цвет
+                    }
+                ],
+                xAxis: { 
+                    type: 'category', 
+                    data: this.currentChartRows.map(row => row.dateTime),
+                    axisLabel: { hideOverlap: true } // Прячем наложения подписей дат
+                },
+                yAxis: { 
+                    type: 'value', 
+                    name: 'руб./МВт·ч',
+                    scale: true // График не будет начинаться от нуля, колебания станут заметнее
+                },
                 series: [
                     {
                         name: 'Фактическая цена',
                         type: 'line',
                         smooth: true,
+                        showSymbol: false, // Отключаем точки для производительности
                         data: this.currentChartRows.map(row => row.actual),
                         connectNulls: false,
                     },
@@ -573,13 +617,13 @@ export default {
                         name: 'Прогнозная цена',
                         type: 'line',
                         smooth: true,
+                        showSymbol: false, // Отключаем точки
                         data: this.currentChartRows.map(row => row.predicted),
                         connectNulls: false,
                     },
                 ],
             }
         },
-    },
 
     methods: {
         ...mapActions(['fetchPriceAnalyticsRows']),
