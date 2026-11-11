@@ -523,7 +523,7 @@ export default {
                 legend: {
                     type: 'scroll',
                 },
-                 grid: { left: 60, right: 20, top: 50, bottom: 70 },
+                 grid: { left: 60, right: 20, top: 50, bottom: 90 },
                 dataZoom: timeAxisZoom,
                 xAxis: {
                     type: 'category',
@@ -572,7 +572,7 @@ export default {
                         return `${date}<br>${lines.join("<br>")}`
                     },
                 },
-                grid: { left: 60, right: 20, top: 50, bottom: 70 },
+                grid: { left: 60, right: 20, top: 50, bottom: 90 },
                 dataZoom: timeAxisZoom,
                 xAxis: {
                     type: "category",
@@ -661,7 +661,7 @@ export default {
                 legend: {
                     type: 'scroll',
                 },
-                grid: { left: 70, right: 70, top: 50, bottom: 70 },
+                grid: { left: 70, right: 70, top: 50, bottom: 90 },
                 dataZoom: timeAxisZoom,
                 xAxis: {
                     type: 'category',
