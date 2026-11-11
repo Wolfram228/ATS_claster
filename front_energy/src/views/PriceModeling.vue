@@ -624,6 +624,7 @@ export default {
                 ],
             }
         },
+        },
 
     methods: {
         ...mapActions(['fetchPriceAnalyticsRows']),
