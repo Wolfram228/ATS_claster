@@ -140,8 +140,9 @@ REST_FRAMEWORK = {
         'anon': '100/hour',
         'user': '1000/hour'
     },
+    # ИЗМЕНЕНИЕ 1: Заменили стандартный JWTAuthentication на CookieJWTAuthentication
     'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'energy_api.jwt_cookies.CookieJWTAuthentication',
     ),
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.AllowAny',
@@ -151,8 +152,10 @@ REST_FRAMEWORK = {
 # CORS SETTINGS
 CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
+
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=30),      
+    # ИЗМЕНЕНИЕ 2: Уменьшили время жизни access-токена с 30 до 15 минут
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=15),      
     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),         
     'ROTATE_REFRESH_TOKENS': True,                       
     'BLACKLIST_AFTER_ROTATION': True,                    
