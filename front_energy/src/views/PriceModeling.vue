@@ -553,17 +553,15 @@ export default {
             return this.hourlyForecastData[this.selectedForecastView]
         },
 
-       forecastChartOption() {
+      forecastChartOption() {
             return {
                 tooltip: { 
                     trigger: 'axis',
-                    axisPointer: { type: 'cross' } // Перекрестие при наведении
+                    axisPointer: { type: 'cross' }
                 },
                 legend: { top: 0 },
-                // Увеличиваем отступы, чтобы поместились инструменты сверху и ползунок снизу
                 grid: { left: 60, right: 25, top: 80, bottom: 80 },
                 
-                // Инструменты для выделения области
                 toolbox: {
                     show: true,
                     right: 20,
@@ -577,39 +575,38 @@ export default {
                     }
                 },
                 
-                // Ползунок и зум
+                // Тот самый dataZoom из инструкции
                 dataZoom: [
                     { 
                         type: 'inside', 
-                        xAxisIndex: 0,
-                        filterMode: 'none'
+                        xAxisIndex: 0, 
+                        filterMode: 'filter', 
+                        zoomOnMouseWheel: true, 
+                        moveOnMouseMove: true 
                     },
                     { 
                         type: 'slider', 
-                        xAxisIndex: 0,
-                        filterMode: 'none',
-                        bottom: 20,
-                        height: 32,
-                        borderColor: 'rgba(0,0,0,0.2)',
-                        fillerColor: 'rgba(144, 202, 249, 0.3)' // Приятный голубой цвет
-                    }
+                        xAxisIndex: 0, 
+                        filterMode: 'filter', 
+                        bottom: 20 
+                    },
                 ],
                 xAxis: { 
                     type: 'category', 
                     data: this.currentChartRows.map(row => row.dateTime),
-                    axisLabel: { hideOverlap: true } // Прячем наложения подписей дат
+                    axisLabel: { hideOverlap: true }
                 },
                 yAxis: { 
                     type: 'value', 
                     name: 'руб./МВт·ч',
-                    scale: true // График не будет начинаться от нуля, колебания станут заметнее
+                    scale: true
                 },
                 series: [
                     {
                         name: 'Фактическая цена',
                         type: 'line',
                         smooth: true,
-                        showSymbol: false, // Отключаем точки для производительности
+                        showSymbol: false,
                         data: this.currentChartRows.map(row => row.actual),
                         connectNulls: false,
                     },
@@ -617,7 +614,7 @@ export default {
                         name: 'Прогнозная цена',
                         type: 'line',
                         smooth: true,
-                        showSymbol: false, // Отключаем точки
+                        showSymbol: false,
                         data: this.currentChartRows.map(row => row.predicted),
                         connectNulls: false,
                     },
