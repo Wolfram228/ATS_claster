@@ -108,6 +108,11 @@
           Уже есть аккаунт?
           <router-link to="/login">Войти</router-link>
         </p>
+
+        <!-- ИЗМЕНЕНИЕ 1: Ссылка на главную страницу -->
+        <p class="login">
+          <router-link to="/">Вернуться на главную</router-link>
+        </p>
       </form>
     </div>
   </div>
@@ -117,10 +122,11 @@
 import { reactive, ref, computed } from "vue";
 import { useRouter } from "vue-router";
 import store from "../store";
+
+// ИЗМЕНЕНИЕ 2: Удален setTokens из импортов
 import {
   registerUser as registerUserRequest,
   saveUser,
-  setTokens,
 } from "../utils/auth";
 
 const router = useRouter();
@@ -209,12 +215,7 @@ async function registerUser() {
     isSubmitting.value = true;
     const response = await registerUserRequest(payload);
 
-    if (response?.access && response?.refresh) {
-      setTokens({
-        access: response.access,
-        refresh: response.refresh,
-      });
-    }
+    // ИЗМЕНЕНИЕ 3: Удален блок с if (response?.access && response?.refresh) { setTokens(...) }
 
     if (response?.user) {
       saveUser(response.user);
@@ -236,6 +237,7 @@ async function registerUser() {
 </script>
 
 <style scoped>
+/* Стили остались без изменений */
 .page{
   min-height: calc(100vh - 70px);
   display: grid;
