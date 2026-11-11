@@ -60,6 +60,7 @@ const routes = [
         component: () => import("../views/NotFound.vue")
     }
 ]
+
 const router = createRouter({
     history: createWebHistory(),
     routes,
@@ -68,12 +69,17 @@ const router = createRouter({
     }
 })
 
-router.beforeEach((to) => {
-  const publicPages = ["/login", "/register"]
-  const isPublic = publicPages.includes(to.path)
+// ИЗМЕНЕНИЕ: Добавили "/" в список публичных страниц
+const publicPages = ["/", "/login", "/register"]
 
+router.beforeEach((to) => {
+  const isPublic = publicPages.includes(to.path)
+  
   if (!isPublic && !isAuth()) {
-    return { path: "/login" }
+    return {
+      path: "/login",
+      query: { redirect: to.fullPath }, // Сохраняем путь, куда шел пользователь
+    }
   }
 })
 
