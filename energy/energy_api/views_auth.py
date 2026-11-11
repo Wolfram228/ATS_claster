@@ -5,6 +5,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 
+from energy_api.jwt_cookies import clear_auth_cookies, set_auth_cookies
 from energy_api.models import UserProfile
 
 
@@ -31,15 +32,16 @@ def register(request):
     
     refresh = RefreshToken.for_user(user)
     
-    return Response({
-        'access': str(refresh.access_token),
-        'refresh': str(refresh),
+    response = Response({
         'user': {
             'id': user.id,
             'username': user.username,
             'email': user.email,
         }
     }, status=status.HTTP_201_CREATED)
+    
+    set_auth_cookies(response, str(refresh.access_token), str(refresh))
+    return response
 
 
 @api_view(['GET'])
@@ -55,25 +57,22 @@ def profile(request):
 
 
 @api_view(['POST'])
-@permission_classes([IsAuthenticated])
+@permission_classes([AllowAny])
 def logout(request):
-    try:
-        refresh_token = request.data.get('refresh')
-        if not refresh_token:
-            return Response({
-                'error': 'refresh token required'
-            }, status=status.HTTP_400_BAD_REQUEST)
+    refresh_token = request.COOKIES.get('refresh') or request.data.get('refresh')
+    response = Response({'message': 'Logout successful'})
+    clear_auth_cookies(response)
+    
+    if not refresh_token:
+        return response
         
+    try:
         token = RefreshToken(refresh_token)
         token.blacklist()
+    except Exception:
+        pass
         
-        return Response({
-            'message': 'Logout successful'
-        })
-    except Exception as e:
-        return Response({
-            'error': 'Invalid token'
-        }, status=status.HTTP_400_BAD_REQUEST)
+    return response
 
 
 @api_view(['POST'])
