@@ -16,18 +16,17 @@
                             label="Дата с"
                             type="date"
                             hide-details
-                            :min="minDateString"
-                            :max="maxDateString"
+                            :max="maxDateFrom"
                         />
                     </v-col>
                     <v-col cols="12" md="4">
-                        <v-text-field
+                       <v-text-field
                             v-model="dateTo"
                             label="Дата по"
                             type="date"
                             hide-details
-                            :min="dateFrom"
-                            :max="maxDateString"
+                            :min="minDateTo"
+                            :max="maxDateTo"
                         />
                     </v-col>
                     <v-col cols="12" md="4">
@@ -106,8 +105,9 @@
                         </v-btn>
                     </v-col>
                 </v-row>
-
-                <div v-if="isDateInvalid" class="text-error mt-3">Некорректный диапазон дат (от — не раньше месяца назад, до — не позже сегодня).</div>
+                <div v-if="isDateInvalid" class="text-error mt-3">
+                    Некорректный диапазон дат: «по» не позже сегодня и период не менее месяца.
+                </div>
                 <div v-if="hasPendingChanges" class="text-error mt-3">Вы изменили параметры, но ещё не загрузили данные.</div>
             </v-container>
         </v-card>
@@ -337,7 +337,6 @@ export default {
 
             arLags: 24,
             arLagsItems: [
-                { title: '12 часов', value: 12 },
                 { title: '24 часа', value: 24 },
                 { title: '48 часов', value: 48 },
                 { title: '72 часа', value: 72 },
@@ -397,22 +396,45 @@ export default {
         },
 
         // минимальная допустимая дата — месяц назад
-        minDateString() {
-            const d = new Date()
-            d.setMonth(d.getMonth() - 1)
+        maxDateFrom() {
+            if (!this.dateTo) {
+                const d = new Date()
+                d.setDate(d.getDate() - 30)
+                return this.toDateString(d)
+            }
+            const [y, m, day] = this.dateTo.split('-').map(Number)
+            const d = new Date(y, m - 1, day)
+            d.setDate(d.getDate() - 30)
             return this.toDateString(d)
         },
-
-        // максимальная допустимая дата — сегодня
-        maxDateString() {
+        
+        // Минимум для dateTo: dateFrom + 30 дней
+        minDateTo() {
+            if (!this.dateFrom) return undefined
+            const [y, m, day] = this.dateFrom.split('-').map(Number)
+            const d = new Date(y, m - 1, day)
+            d.setDate(d.getDate() + 30)
+            return this.toDateString(d)
+        },
+        
+        // Максимум для dateTo: сегодня
+        maxDateTo() {
             return this.toDateString(new Date())
         },
-
+        
         isDateInvalid() {
             if (!this.dateFrom || !this.dateTo) return true
             if (this.dateFrom > this.dateTo) return true
-            if (this.dateFrom < this.minDateString) return true
-            if (this.dateTo > this.maxDateString) return true
+            if (this.dateTo > this.maxDateTo) return true
+        
+            const [fy, fm, fd] = this.dateFrom.split('-').map(Number)
+            const [ty, tm, td] = this.dateTo.split('-').map(Number)
+            const from = new Date(fy, fm - 1, fd)
+            const to = new Date(ty, tm - 1, td)
+            const diffDays = Math.round((to - from) / (1000 * 60 * 60 * 24))
+        
+            if (diffDays < 30) return true
+        
             return false
         },
 
@@ -502,7 +524,7 @@ export default {
         getInitialRange() {
             const today = new Date()
             const from = new Date()
-            from.setMonth(from.getMonth() - 1)
+            from.setDate(from.getDate() - 60)   // 2 месяца — с запасом больше минимума
             return { from: this.toDateString(from), to: this.toDateString(today) }
         },
 
@@ -563,29 +585,67 @@ export default {
                 this.temperatureByDateHour = {}
                 return
             }
+        
+            this.weatherLoading = true
+            this.weatherError = null
+        
+            const params = new URLSearchParams({
+                latitude: String(coordinates.latitude),
+                longitude: String(coordinates.longitude),
+                start_date: from,
+                end_date: to,
+                hourly: 'temperature_2m',
+                timezone: 'auto',
+            })
+        
+            // Сначала archive (авторитетен для истории), затем forecast (заполняет «свежие» дни,
+            // которых в архиве ещё нет из-за задержки ~5 дней).
+            const endpoints = [
+                `https://archive-api.open-meteo.com/v1/archive?${params.toString()}`,
+                `https://api.open-meteo.com/v1/forecast?${params.toString()}`,
+            ]
+        
+            const result = {}
+            const errors = []
+            
+        
             try {
-                this.weatherLoading = true
-                const params = new URLSearchParams({
-                    latitude: String(coordinates.latitude),
-                    longitude: String(coordinates.longitude),
-                    start_date: from,
-                    end_date: to,
-                    hourly: 'temperature_2m',
-                    timezone: 'auto',
-                })
-                const response = await fetch(`https://archive-api.open-meteo.com/v1/archive?${params.toString()}`)
-                if (!response.ok) throw new Error(`Ошибка загрузки температуры: ${response.status}`)
-                const json = await response.json()
-                const times = json?.hourly?.time || []
-                const temperatures = json?.hourly?.temperature_2m || []
-                const result = {}
-                for (let i = 0; i < times.length; i++) {
-                    const key = this.getWeatherTimeKey(times[i])
-                    const value = this.toNumber(temperatures[i])
-                    if (key && Number.isFinite(value)) result[key] = value
+                for (const url of endpoints) {
+                    try {
+                        const response = await fetch(url)
+                        if (!response.ok) {
+                            errors.push(`${url.split('?')[0]} → HTTP ${response.status}`)
+                            continue
+                        }
+                        const json = await response.json()
+                        if (json?.error) {
+                            errors.push(`${url.split('?')[0]} → ${json.reason || 'error'}`)
+                            continue
+                        }
+                        const times = json?.hourly?.time || []
+                        const temperatures = json?.hourly?.temperature_2m || []
+                        for (let i = 0; i < times.length; i++) {
+                            const key = this.getWeatherTimeKey(times[i])
+                            const value = this.toNumber(temperatures[i])
+                            // archive wins: уже имеющееся значение не перезаписываем
+                            if (key && Number.isFinite(value) && !(key in result)) {
+                                result[key] = value
+                            }
+                        }
+                    } catch (e) {
+                        errors.push(`${url.split('?')[0]} → ${e.message}`)
+                    }
                 }
+        
                 this.temperatureByDateHour = result
-                if (!Object.keys(result).length) this.weatherError = 'Температура не была получена из внешнего источника по выбранному периоду.'
+        
+                if (!Object.keys(result).length) {
+                    this.weatherError = 'Температура не была получена из внешнего источника по выбранному периоду.'
+                    if (errors.length) console.warn('Open-Meteo: не удалось получить температуру', errors)
+                } else if (errors.length) {
+                    // Частичный успех — не критично, но в консоль положим
+                    console.warn('Open-Meteo: часть источников недоступна', errors)
+                }
             } catch (error) {
                 console.error('fetchTemperatureRows error', error)
                 this.weatherError = 'Не удалось загрузить температуру из внешнего погодного источника. Модель будет построена без температуры.'
