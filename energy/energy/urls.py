@@ -1,11 +1,10 @@
 from django.contrib import admin
 from django.urls import path, include
 from rest_framework import routers
-from rest_framework_simplejwt.views import (
-    TokenObtainPairView,
-    TokenRefreshView,
-    TokenVerifyView,
-)
+
+# ИЗМЕНЕНИЕ 1: Оставили только TokenVerifyView и импортировали свои классы из jwt_cookies
+from rest_framework_simplejwt.views import TokenVerifyView
+from energy_api.jwt_cookies import CookieTokenObtainPairView, CookieTokenRefreshView
 
 from energy_api import views
 from energy_api.views_auth import register, profile, logout, change_password
@@ -20,8 +19,10 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('', views.index, name='home'),
     
-    path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
-    path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    # ИЗМЕНЕНИЕ 2: Заменили стандартные View на Cookie-версии
+    path('api/token/', CookieTokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('api/token/refresh/', CookieTokenRefreshView.as_view(), name='token_refresh'),
+    # TokenVerifyView не трогаем
     path('api/token/verify/', TokenVerifyView.as_view(), name='token_verify'),
     
     path('api/auth/register/', register, name='register'),
