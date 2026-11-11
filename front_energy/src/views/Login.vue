@@ -32,6 +32,11 @@
           {{ loading ? "Входим..." : "Войти" }}
         </button>
 
+        <!-- ИЗМЕНЕНИЕ 1: Сообщение об истекшей сессии -->
+        <p v-if="sessionExpired" class="error">
+          Сессия истекла. Войдите снова, чтобы продолжить работу.
+        </p>
+
         <p v-if="errorMessage" class="error">
           {{ errorMessage }}
         </p>
@@ -40,18 +45,28 @@
           Нет аккаунта?
           <router-link to="/register">Зарегистрироваться</router-link>
         </p>
+
+        <!-- ИЗМЕНЕНИЕ 2: Ссылка на главную страницу -->
+        <p class="hint">
+          <router-link to="/">Вернуться на главную</router-link>
+        </p>
       </form>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref } from "vue"
-import { useRouter } from "vue-router"
+// ИЗМЕНЕНИЕ 3: Добавлены computed и useRoute
+import { computed, ref } from "vue"
+import { useRoute, useRouter } from "vue-router"
 import { fetchProfile, loginUser } from "../utils/auth"
 import store from '../store';
 
 const router = useRouter()
+const route = useRoute()
+
+// Проверяем, не выкинуло ли нас из-за истекшей сессии
+const sessionExpired = computed(() => route.query.reason === "expired")
 
 const login = ref("")
 const password = ref("")
@@ -78,7 +93,22 @@ async function onSubmit() {
       store.commit("SET_USER", null)
     }
 
-    router.push("/lk")
+    // ИЗМЕНЕНИЕ 4: Умный редирект
+    const redirect = route.query.redirect
+    if (
+      typeof redirect === "string" && 
+      redirect.startsWith("/") && 
+      !redirect.startsWith("//") && 
+      redirect !== "/login" && 
+      redirect !== "/register"
+    ) {
+      // Если есть безопасный redirect, идем туда
+      router.push(redirect)
+    } else {
+      // Иначе ведем в личный кабинет по умолчанию
+      router.push("/lk")
+    }
+    
   } catch (error) {
     errorMessage.value = error.message || "Не удалось выполнить вход"
   } finally {
