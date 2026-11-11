@@ -522,6 +522,7 @@ export default {
                 },
                 legend: {
                     type: 'scroll',
+                    top: 0, 
                 },
                  grid: { left: 60, right: 20, top: 50, bottom: 90 },
                 dataZoom: timeAxisZoom,
@@ -571,6 +572,8 @@ export default {
                         })
                         return `${date}<br>${lines.join("<br>")}`
                     },
+                    legend: {
+                    top: 0, 
                 },
                 grid: { left: 60, right: 20, top: 50, bottom: 90 },
                 dataZoom: timeAxisZoom,
@@ -660,6 +663,7 @@ export default {
                 },
                 legend: {
                     type: 'scroll',
+                    top: 0,
                 },
                 grid: { left: 70, right: 70, top: 50, bottom: 90 },
                 dataZoom: timeAxisZoom,
