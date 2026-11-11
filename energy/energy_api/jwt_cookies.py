@@ -1,8 +1,5 @@
 from django.conf import settings
-from rest_framework import status
 from rest_framework.exceptions import AuthenticationFailed
-from rest_framework.permissions import AllowAny
-from rest_framework.response import Response
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
 
@@ -72,60 +69,3 @@ class CookieJWTAuthentication(JWTAuthentication):
             return self.get_user(validated_token), validated_token
         except (InvalidToken, TokenError, AuthenticationFailed):
             return None
-
-
-# ==========================================
-# ВАЖНО: Импорт ниже перенесен сюда, чтобы избежать Circular Import
-# ==========================================
-from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
-
-
-class CookieTokenObtainPairView(TokenObtainPairView):
-    authentication_classes = [] 
-    permission_classes = [AllowAny]
-
-    def post(self, request, *args, **kwargs):
-        response = super().post(request, *args, **kwargs)
-        if response.status_code == 200:
-            access = response.data.get('access')
-            refresh = response.data.get('refresh')
-            set_auth_cookies(response, access, refresh)
-            response.data = {'detail': 'Login successful'}
-        return response
-
-
-class CookieTokenRefreshView(TokenRefreshView):
-    authentication_classes = []
-    permission_classes = [AllowAny]
-
-    def post(self, request, *args, **kwargs):
-        data = {}
-        if request.data:
-            data = request.data.copy() if hasattr(request.data, 'copy') else dict(request.data)
-            
-        if not data.get('refresh'):
-            cookie_refresh = request.COOKIES.get(REFRESH_COOKIE)
-            if cookie_refresh:
-                data['refresh'] = cookie_refresh
-
-        serializer = self.get_serializer(data=data)
-        try:
-            serializer.is_valid(raise_exception=True)
-        except Exception:
-            response = Response(
-                {'detail': 'Invalid refresh token'},
-                status=status.HTTP_401_UNAUTHORIZED,
-            )
-            clear_auth_cookies(response)
-            return response
-
-        access = str(serializer.validated_data['access'])
-        refresh = serializer.validated_data.get('refresh')
-        
-        response = Response({'detail': 'Token refreshed'})
-        if refresh:
-            set_auth_cookies(response, access, str(refresh))
-        else:
-            set_auth_cookies(response, access)
-            
-        return response
